@@ -7,12 +7,15 @@ edition = "2021"
 
 [dependencies]
 yew ="0.19"
+serde = "1.0.140"
+serde_json="1.0.82"
 yew-router = "0.16.0"
 web-sys = {version="0.3.58",features=["EventSource","Event"]}
 wasm-bindgen-futures="0.4.30"
 reqwasm="0.5.0"
 gloo-events="0.1.2"
 wasm-bindgen = "0.2.81"
-gloo = "0.8.0"
-serde = "1.0.140"
-serde_json="1.0.82"
+gloo = "0.8.0" 
+stylist = { version = "0.10.0", features = ["yew"] }
+uuid={ version = "1.1.2", features = ["v4","js"] }
+common = {path= "../common"} 

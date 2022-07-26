@@ -1,0 +1,27 @@
+.drop-row {
+  display: flex;
+  width: 18em;
+  justify-content: space-evenly;
+}
+
+.drop {
+  width: 2em;
+  margin: 0.5em;
+  text-align: center;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  width: 18em;
+}
+
+.square {
+  background-color: bisque;
+  margin: 0.2em;
+  width: 2em;
+  height: 2em;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}

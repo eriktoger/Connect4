@@ -1,0 +1,26 @@
+sudo docker build --rm . -f backend/Dockerfile -t rocket
+
+sudo docker run -it -p 8000:8000 rocket:latest
+
+# koyeb
+koyeb apps init connect4 --docker eriktoger/rocket --ports 8000:http --routes /:8000
+
+#heroku
+
+sudo docker build --rm . -f backend/Dockerfile -t registry.heroku.com/connect4rust/web
+sudo heroku auth:login
+heroku container:login
+heroku create connect4rust # only once
+sudo docker push registry.heroku.com/connect4rust/web
+heroku container:release web -a connect4rust
+cd backend && sudo heroku container:push web --app=connect4rust
+
+#other
+sudo docker system prune -a
+
+
+heroku buildpacks:set emk/rust
+
+heroku git:remote -a connect4rust
+https://<app-name>.herokuapp.com/
+git pushf heroku master
