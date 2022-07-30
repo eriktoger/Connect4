@@ -16,6 +16,7 @@ use rocket::Config;
 use rocket::{Request, Response};
 use rocket::{Shutdown, State};
 use std::collections::HashMap;
+use std::env;
 use uuid::Uuid;
 pub struct CORS;
 
@@ -271,16 +272,26 @@ async fn rocket() -> _ {
         db,
     };
 
-    rocket::build().attach(CORS).manage(main_state).mount(
-        "/",
-        routes![
-            events,
-            lobby_events,
-            play_move,
-            create_game,
-            join_game,
-            update_game,
-            get_games,
-        ],
-    )
+    let default_port = 8000;
+    let port: u64 = env::var("PORT")
+        .and_then(|port| Ok(port.parse::<u64>().unwrap_or(default_port)))
+        .unwrap_or(default_port);
+
+    let config = Config::figment().merge(("port", port));
+
+    rocket::custom(config)
+        .attach(CORS)
+        .manage(main_state)
+        .mount(
+            "/",
+            routes![
+                events,
+                lobby_events,
+                play_move,
+                create_game,
+                join_game,
+                update_game,
+                get_games,
+            ],
+        )
 }
