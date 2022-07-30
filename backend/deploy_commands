@@ -1,0 +1,9 @@
+#deploy
+sudo heroku container:push web
+heroku container:release web
+
+#open page
+sudo heroku open
+
+#restart the service
+heroku ps:restart web -a connect4rust
