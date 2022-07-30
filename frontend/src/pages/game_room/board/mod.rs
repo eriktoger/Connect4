@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 use stylist::Style;
 use yew::{function_component, html, Callback, Properties};
 
+use crate::constants::API_ROUTE;
+
 #[derive(Properties, PartialEq)]
 pub struct BoardProps {
     pub game: Game,
@@ -66,11 +68,8 @@ fn dropToken(props: &DropTokenProps) -> Html {
         };
         let serialized = serde_json::to_string(&new_move).unwrap();
         wasm_bindgen_futures::spawn_local(async move {
-            Request::post("http://localhost:8000/move")
-                .body(&serialized)
-                .send()
-                .await
-                .unwrap();
+            let url = format!("{}{}", API_ROUTE, "/move");
+            Request::post(&url).body(&serialized).send().await.unwrap();
         });
     });
     html! {<div class="drop" onclick={drop_token.clone()}>{props.column}</div>}

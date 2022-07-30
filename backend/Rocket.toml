@@ -5,7 +5,6 @@ workers = 2
 keep_alive = 5
 log = "normal"
 limits = { forms = 32768 }
-hej ="a"
 
 [release]
 address = "0.0.0.0"
@@ -14,4 +13,4 @@ workers = 2
 keep_alive = 5
 log = "critical"
 limits = { forms = 32768 }
-hej ="b"
+

@@ -4,6 +4,9 @@ use serde::{Deserialize, Serialize};
 use wasm_bindgen::JsCast;
 use web_sys::{console, Event, EventSource, HtmlInputElement, MessageEvent};
 use yew::{function_component, html, use_effect_with_deps, use_state, Callback};
+use yew_router::{history::History, hooks::use_history};
+
+use crate::{constants::API_ROUTE, routes::Route};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct GameInfo {
@@ -21,11 +24,8 @@ pub fn home() -> Html {
         };
         let serialized = serde_json::to_string(&game_info).unwrap();
         wasm_bindgen_futures::spawn_local(async move {
-            Request::post("http://localhost:8000/message2")
-                .body(&serialized)
-                .send()
-                .await
-                .unwrap();
+            let url = format!("{}{}", API_ROUTE, "/message2");
+            Request::post(&url).body(&serialized).send().await.unwrap();
         });
     });
     let room_copy = room.clone();
@@ -38,7 +38,7 @@ pub fn home() -> Html {
                 .value(),
         );
     });
-    let url = format!("{}{}", "http://localhost:8000/events/", *room);
+    let url = format!("{}{}{}", API_ROUTE, "/events/", *room);
 
     let es = use_state(|| EventSource::new(&url).unwrap());
 
@@ -55,7 +55,7 @@ pub fn home() -> Html {
     let room_dependicy = room.clone();
     use_effect_with_deps(
         move |_| {
-            let url = format!("{}{}", "http://localhost:8000/events/", *room_clone);
+            let url = format!("{}{}{}", API_ROUTE, "/events/", *room_clone);
             console::log_1(&url.clone().into());
             let new_es = EventSource::new(&url).unwrap();
 
@@ -75,11 +75,18 @@ pub fn home() -> Html {
     );
     console::log_1(&(*listener.event_type()).into());
     let hej = &*room.clone();
+
+    let history = use_history().unwrap();
+    let cb3 = Callback::from(move |_| {
+        history.push(Route::Lobby);
+    });
+
     html! {
       <div>{"Home"}
       <button onclick={cb}> {"Send message"}</button>
       <span>{hej}</span>
       <input onchange={cb2}/>
+      <button onclick={cb3}>{"Lobby"}</button>
       </div>
     }
 }

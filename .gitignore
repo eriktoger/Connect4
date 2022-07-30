@@ -1,4 +1,9 @@
 target
 /frontend/dist
-.env
+/frontend/build
+.vscode
+backend/.env
 
+
+# Local Netlify folder
+.netlify

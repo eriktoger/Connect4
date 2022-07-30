@@ -6,6 +6,8 @@ use wasm_bindgen::JsCast;
 use web_sys::{Event, EventSource, MessageEvent};
 use yew::{function_component, html, use_state, Properties};
 
+use crate::constants::API_ROUTE;
+
 #[derive(Properties, PartialEq)]
 pub struct GameRoomProps {
     pub game_id: String,
@@ -14,7 +16,7 @@ pub struct GameRoomProps {
 
 #[function_component(GameRoom)]
 pub fn game_room(props: &GameRoomProps) -> Html {
-    let url = format!("{}{}", "http://localhost:8000/events/", props.game_id);
+    let url = format!("{}{}{}", API_ROUTE, "/events/", props.game_id);
 
     let es = use_state(|| EventSource::new(&url).unwrap());
 

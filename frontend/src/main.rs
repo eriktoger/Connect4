@@ -1,3 +1,4 @@
+mod constants;
 mod pages;
 mod routes;
 use routes::{switch, Route};

@@ -46,8 +46,10 @@ impl Fairing for CORS {
                 "http://localhost:8080",
             ));
         } else {
-            // should be some netlify thingy
-            response.set_header(Header::new("Access-Control-Allow-Origin", "*"));
+            response.set_header(Header::new(
+                "Access-Control-Allow-Origin",
+                "https://connect4rust.netlify.app",
+            ));
         }
     }
 }
@@ -197,6 +199,14 @@ async fn update_game(main_state: &State<MainState>, data: String) {
 #[post("/games/join", data = "<data>")]
 async fn join_game(main_state: &State<MainState>, data: String) {
     let deserialized: NewPlayer = serde_json::from_str(&data).unwrap();
+    let game = main_state
+        .db
+        .get_one_game(deserialized.game.clone())
+        .await
+        .unwrap();
+    if game.player_2 != "" {
+        return;
+    }
     main_state
         .db
         .join_game(deserialized.game, deserialized.player)

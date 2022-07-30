@@ -1,14 +1,13 @@
-use crate::routes::Route;
+use crate::{constants::API_ROUTE, routes::Route};
 use common::{Game, NewPlayer};
 use gloo_events::EventListener;
 use reqwasm::http::Request;
 use stylist::Style;
 use uuid::Uuid;
 use wasm_bindgen::JsCast;
-use web_sys::{Event, EventSource, MessageEvent, MouseEvent};
+use web_sys::{console, Event, EventSource, MessageEvent, MouseEvent};
 use yew::{function_component, html, use_effect_with_deps, use_ref, use_state, Callback};
 use yew_router::{history::AnyHistory, history::History, hooks::use_history};
-
 #[function_component(Lobby)]
 pub fn lobby() -> Html {
     let style_sheet = Style::new(include_str!("style.css")).expect("Css failed to load");
@@ -16,7 +15,8 @@ pub fn lobby() -> Html {
     let player_id = use_ref(|| Uuid::new_v4().to_string());
 
     let games_clone = games.clone();
-    let es = use_state(|| EventSource::new("http://localhost:8000/lobby-events/").unwrap());
+    let url = format!("{}{}", API_ROUTE, "/lobby-events/");
+    let es = use_state(|| EventSource::new(&url).unwrap());
     use_state(|| {
         EventListener::new(&es, "message", move |event: &Event| {
             let e = event.dyn_ref::<MessageEvent>().unwrap();
@@ -30,7 +30,9 @@ pub fn lobby() -> Html {
     use_effect_with_deps(
         |_| {
             wasm_bindgen_futures::spawn_local(async move {
-                let response: Vec<Game> = Request::get("http://localhost:8000/games")
+                let url = format!("{}{}", API_ROUTE, "/games");
+                console::log_1(&url.clone().into());
+                let response: Vec<Game> = Request::get(&url)
                     .send()
                     .await
                     .unwrap()
@@ -79,10 +81,8 @@ fn get_join_game(game: Game, player_id: String, history: AnyHistory) -> yew::Cal
                 game: game.clone().id,
             };
             let serialized = serde_json::to_string(&new_player).unwrap();
-            let _ = Request::post("http://localhost:8000/games/join")
-                .body(&serialized)
-                .send()
-                .await;
+            let url = format!("{}{}", API_ROUTE, "/games/join");
+            let _ = Request::post(&url).body(&serialized).send().await;
             history.push(Route::Room {
                 game_id: game.id,
                 player_id: player_id.to_string(),
@@ -96,7 +96,8 @@ fn get_create_game(player_id: String, history: AnyHistory) -> yew::Callback<Mous
         let player_id = player_id.clone();
         let history = history.clone();
         wasm_bindgen_futures::spawn_local(async move {
-            let response: String = Request::post("http://localhost:8000/games")
+            let url = format!("{}{}", API_ROUTE, "/games");
+            let response: String = Request::post(&url)
                 .body(player_id.to_string())
                 .send()
                 .await
