@@ -40,17 +40,13 @@ impl Fairing for CORS {
     }
 
     async fn on_response<'r>(&self, _request: &'r Request<'_>, response: &mut Response<'r>) {
-        if Config::default().profile == "debug" {
-            response.set_header(Header::new(
-                "Access-Control-Allow-Origin",
-                "http://127.0.0.1:8080",
-            ));
+        let value = if Config::default().profile == "debug" {
+            "http://127.0.0.1:8080"
         } else {
-            response.set_header(Header::new(
-                "Access-Control-Allow-Origin",
-                "https://connect4rust.netlify.app",
-            ));
-        }
+            "https://connect4rust.netlify.app"
+        };
+
+        response.set_header(Header::new("Access-Control-Allow-Origin", value));
     }
 }
 
