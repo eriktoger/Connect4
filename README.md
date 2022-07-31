@@ -31,3 +31,7 @@ A pure Rust frontend built with Yew. Yew is heavily react inspired. Uses Stylist
 ## About Backend
 
 The backend is handled by Rocket.
+
+## About Common
+
+Things that are used in both frontend and backend, like the data structs that are sent by the api.
