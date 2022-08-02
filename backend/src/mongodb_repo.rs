@@ -1,7 +1,7 @@
 use std::env;
 extern crate dotenv;
 use crate::game_model::Channel;
-use common::Game;
+use common::{Game, UserInfo};
 use dotenv::dotenv;
 use mongodb::{
     bson::{doc, Bson},
@@ -14,6 +14,7 @@ use uuid::Uuid;
 pub struct MongoRepo {
     game_col: Collection<Game>,
     channel_col: Collection<Channel>,
+    user_col: Collection<UserInfo>,
 }
 
 //init
@@ -26,12 +27,14 @@ impl MongoRepo {
         };
         let client = Client::with_uri_str(uri).await.unwrap();
         let db = client.database("Connect4");
-        let game_col: Collection<Game> = db.collection("games");
-        let channel_col: Collection<Channel> = db.collection("channels");
+        let game_col = db.collection("games");
+        let channel_col = db.collection("channels");
+        let user_col: Collection<UserInfo> = db.collection("users");
 
         //maybe should be its own function called reset or something.
         let _ = channel_col.delete_many(doc! {}, None).await;
         let _ = game_col.delete_many(doc! {}, None).await;
+        let _ = user_col.delete_many(doc! {}, None).await;
 
         let mut docs = vec![];
         for _ in 0..3 {
@@ -43,9 +46,36 @@ impl MongoRepo {
         }
         let _ = channel_col.insert_many(docs, None).await;
 
+        let username = "admin".to_string();
+        let password = "admin".to_string();
+        let admin = UserInfo { username, password };
+        let _ = user_col.insert_one(admin, None).await;
+
         MongoRepo {
             game_col,
             channel_col,
+            user_col,
+        }
+    }
+
+    pub async fn auth_user(&self, user: UserInfo) -> Option<String> {
+        println!("{}{}", user.username, user.password);
+        let filter = doc! {"username": user.username, "password":user.password};
+        let user: Option<UserInfo> = self
+            .user_col
+            .find_one(filter.clone(), None)
+            .await
+            .ok()
+            .unwrap();
+
+        match user {
+            Some(val) => {
+                let api_key = Uuid::new_v4().to_string();
+                let update = doc! { "$set": {"api_key": api_key.clone()}};
+                let _ = self.user_col.update_one(filter, update, None).await;
+                Some(api_key)
+            }
+            None => None,
         }
     }
 }
@@ -77,7 +107,7 @@ impl MongoRepo {
             .find_one(filter, None)
             .await
             .ok()
-            .expect("Error getting user");
+            .expect("Error getting game");
         game
     }
 

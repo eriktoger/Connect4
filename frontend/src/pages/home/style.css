@@ -1,0 +1,21 @@
+.login {
+}
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.pair {
+  display: flex;
+}
+
+.pair label {
+  display: inline-block;
+  width: 100px;
+  margin: 5px;
+}
+
+.form input[type="submit"] {
+  width: 60px;
+  margin: 5px;
+}

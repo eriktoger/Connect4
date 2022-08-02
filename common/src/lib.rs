@@ -19,3 +19,9 @@ impl PartialEq for Game {
         self.id == other.id && self.turn == other.turn
     }
 }
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct UserInfo {
+    pub username: String,
+    pub password: String,
+}

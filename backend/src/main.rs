@@ -1,7 +1,7 @@
 mod game_model;
 mod game_room;
 pub mod mongodb_repo;
-use common::{Game, NewPlayer};
+use common::{Game, NewPlayer, UserInfo};
 #[macro_use]
 extern crate rocket;
 
@@ -41,7 +41,7 @@ impl Fairing for CORS {
 
     async fn on_response<'r>(&self, _request: &'r Request<'_>, response: &mut Response<'r>) {
         let value = if Config::default().profile == "debug" {
-            "http://127.0.0.1:8080"
+            "http://localhost:8080"
         } else {
             "https://connect4rust.netlify.app"
         };
@@ -257,6 +257,13 @@ async fn play_move(main_state: &State<MainState>, data: &str) {
     //needs to send that move has been made.
 }
 
+#[post("/login", data = "<data>")]
+async fn login(main_state: &State<MainState>, data: &str) -> String {
+    let deserialized: UserInfo = serde_json::from_str(&data).unwrap();
+    let response = main_state.db.auth_user(deserialized).await;
+    serde_json::to_string(&response).unwrap()
+}
+
 #[launch]
 async fn rocket() -> _ {
     // I need to move the game_rooms to a database
@@ -298,6 +305,7 @@ async fn rocket() -> _ {
                 join_game,
                 update_game,
                 get_games,
+                login
             ],
         )
 }

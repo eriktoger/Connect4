@@ -31,7 +31,6 @@ pub fn lobby() -> Html {
         |_| {
             wasm_bindgen_futures::spawn_local(async move {
                 let url = format!("{}{}", API_ROUTE, "/games");
-                console::log_1(&url.clone().into());
                 let response: Vec<Game> = Request::get(&url)
                     .send()
                     .await
