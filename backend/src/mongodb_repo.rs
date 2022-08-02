@@ -64,7 +64,6 @@ impl MongoRepo {
     }
 
     pub async fn auth_user(&self, user: UserInfo) -> Option<String> {
-        println!("{}{}", user.username, user.password);
         let filter = doc! {"username": user.username, "password":user.password};
         let user: Option<UserInfo> = self
             .user_col
@@ -85,7 +84,6 @@ impl MongoRepo {
     }
 
     pub async fn create_user(&self, user: UserInfo) -> Option<String> {
-        println!("{}{}", user.username, user.password);
         let api_key = Some(Uuid::new_v4().to_string());
         let new_user = UserInfo {
             username: user.username,
@@ -94,6 +92,21 @@ impl MongoRepo {
         };
         let _ = self.user_col.insert_one(new_user.clone(), None).await.ok();
         api_key
+    }
+
+    pub async fn user_is_auth(&self, username: String, api_key: String) -> bool {
+        let filter = doc! {"username": username, "api_key":api_key};
+        let user: Option<UserInfo> = self
+            .user_col
+            .find_one(filter.clone(), None)
+            .await
+            .ok()
+            .unwrap();
+
+        match user {
+            Some(val) => true,
+            None => false,
+        }
     }
 }
 

@@ -1,18 +1,29 @@
-use crate::{constants::API_ROUTE, routes::Route};
+use crate::{api_handler::ApiHandler, constants::API_ROUTE, routes::Route};
 use common::{Game, NewPlayer};
 use gloo_events::EventListener;
 use reqwasm::http::Request;
+use serde::{Deserialize, Serialize};
 use stylist::Style;
 use uuid::Uuid;
 use wasm_bindgen::JsCast;
 use web_sys::{Event, EventSource, MessageEvent, MouseEvent};
-use yew::{function_component, html, use_effect_with_deps, use_ref, use_state, Callback};
+use yew::{
+    function_component, html, use_context, use_effect_with_deps, use_ref, use_state, Callback,
+};
 use yew_router::{history::AnyHistory, history::History, hooks::use_history};
+
+#[derive(Serialize, Deserialize)]
+struct UserAuth {
+    api_key: String,
+    username: String,
+}
+
 #[function_component(Lobby)]
 pub fn lobby() -> Html {
     let style_sheet = Style::new(include_str!("style.css")).expect("Css failed to load");
     let games = use_state(|| vec![]);
     let player_id = use_ref(|| Uuid::new_v4().to_string());
+    let ctx = use_context::<ApiHandler>().expect("Api handler context missing");
 
     let games_clone = games.clone();
     let url = format!("{}{}", API_ROUTE, "/lobby-events/");
@@ -31,6 +42,7 @@ pub fn lobby() -> Html {
         |_| {
             wasm_bindgen_futures::spawn_local(async move {
                 let url = format!("{}{}", API_ROUTE, "/games");
+
                 let response: Vec<Game> = Request::get(&url)
                     .send()
                     .await
@@ -63,7 +75,7 @@ pub fn lobby() -> Html {
                     }}
                 )}
              </div>
-             <button onclick={get_create_game(player_id_clone.to_string(), history_clone)}>{"Create new game"}</button>
+             <button onclick={get_create_game(player_id_clone.to_string(), history_clone,ctx)}>{"Create new game"}</button>
        </main>
     }
 }
@@ -90,14 +102,25 @@ fn get_join_game(game: Game, player_id: String, history: AnyHistory) -> yew::Cal
     })
 }
 
-fn get_create_game(player_id: String, history: AnyHistory) -> yew::Callback<MouseEvent> {
+fn get_create_game(
+    player_id: String,
+    history: AnyHistory,
+    ctx: ApiHandler,
+) -> yew::Callback<MouseEvent> {
     Callback::from(move |_| {
         let player_id = player_id.clone();
         let history = history.clone();
+        let user_info = ctx.user_info.clone();
         wasm_bindgen_futures::spawn_local(async move {
             let url = format!("{}{}", API_ROUTE, "/games");
+            let user_auth = UserAuth {
+                username: user_info.username,
+                api_key: user_info.api_key.unwrap_or_default(),
+            };
+            let serialized = serde_json::to_string(&user_auth).unwrap();
             let response: String = Request::post(&url)
                 .body(player_id.to_string())
+                .header("x-api-key", &serialized)
                 .send()
                 .await
                 .unwrap()

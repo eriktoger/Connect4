@@ -7,7 +7,8 @@ extern crate rocket;
 
 use mongodb_repo::MongoRepo;
 use rocket::fairing::{Fairing, Info, Kind};
-use rocket::http::Header;
+use rocket::http::{Header, Status};
+use rocket::request::{FromRequest, Outcome};
 use rocket::response::stream::{Event, EventStream};
 use rocket::serde::{Deserialize, Serialize};
 use rocket::tokio::select;
@@ -19,10 +20,41 @@ use std::collections::HashMap;
 use std::env;
 use uuid::Uuid;
 pub struct CORS;
+#[derive(Serialize, Deserialize, Debug)]
+struct UserAuth {
+    api_key: String,
+    username: String,
+}
 
-// have one lobby
-//presist it to a data base
-// array or hashmap or rooms.
+#[derive(Debug)]
+enum UserAuthError {
+    Missing,
+    Invalid,
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for UserAuth {
+    type Error = UserAuthError;
+
+    async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let main_state: &MainState = req.rocket().state().unwrap();
+
+        match req.headers().get_one("x-api-key") {
+            None => Outcome::Failure((Status::BadRequest, UserAuthError::Missing)),
+            Some(key) => {
+                let deserialized: UserAuth = serde_json::from_str(&key).unwrap();
+                let is_authed = main_state
+                    .db
+                    .user_is_auth(deserialized.username.clone(), deserialized.api_key.clone())
+                    .await;
+                match is_authed {
+                    true => Outcome::Success(deserialized),
+                    false => Outcome::Failure((Status::BadRequest, UserAuthError::Invalid)),
+                }
+            }
+        }
+    }
+}
 
 struct MainState {
     game_channels: HashMap<String, Sender<Game>>,
@@ -47,6 +79,7 @@ impl Fairing for CORS {
         };
 
         response.set_header(Header::new("Access-Control-Allow-Origin", value));
+        response.set_header(Header::new("Access-Control-Allow-Headers", "x-api-key"));
     }
 }
 
@@ -163,9 +196,15 @@ async fn get_games(main_state: &State<MainState>) -> String {
     let k: Vec<Game> = main_state.db.get_all_games().await;
     serde_json::to_string(&k).unwrap()
 }
+#[options("/games")]
+fn options_game() {}
 
 #[post("/games", data = "<player_1>")]
-async fn create_game(main_state: &State<MainState>, player_1: String) -> String {
+async fn create_game(
+    main_state: &State<MainState>,
+    player_1: String,
+    _user_auth: UserAuth,
+) -> String {
     let avaiable_channel = main_state.db.get_available_channel().await;
     if avaiable_channel.is_none() {
         return "".to_string();
@@ -313,7 +352,8 @@ async fn rocket() -> _ {
                 update_game,
                 get_games,
                 login,
-                create_user
+                create_user,
+                options_game
             ],
         )
 }
