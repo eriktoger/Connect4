@@ -24,4 +24,5 @@ impl PartialEq for Game {
 pub struct UserInfo {
     pub username: String,
     pub password: String,
+    pub api_key: Option<String>,
 }

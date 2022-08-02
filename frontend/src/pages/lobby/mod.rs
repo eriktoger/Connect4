@@ -5,7 +5,7 @@ use reqwasm::http::Request;
 use stylist::Style;
 use uuid::Uuid;
 use wasm_bindgen::JsCast;
-use web_sys::{console, Event, EventSource, MessageEvent, MouseEvent};
+use web_sys::{Event, EventSource, MessageEvent, MouseEvent};
 use yew::{function_component, html, use_effect_with_deps, use_ref, use_state, Callback};
 use yew_router::{history::AnyHistory, history::History, hooks::use_history};
 #[function_component(Lobby)]

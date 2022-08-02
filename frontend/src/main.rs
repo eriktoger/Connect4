@@ -6,7 +6,6 @@ use crate::pages::home::Home;
 use api_handler::ApiHandler;
 use common::UserInfo;
 use routes::{switch, Route};
-use web_sys::console;
 use yew::{function_component, html, use_effect_with_deps, use_state, ContextProvider};
 use yew_router::{BrowserRouter, Switch};
 
@@ -22,16 +21,23 @@ fn app() -> Html {
     use_effect_with_deps(
         move |_| {
             let (username, password) = check_local_storage();
-            let user_info = UserInfo { username, password };
-
+            let user_info = UserInfo {
+                username: username.clone(),
+                password: password.clone(),
+                api_key: None,
+            };
             let serialized = serde_json::to_string(&user_info).unwrap();
 
             let ah_clone2 = ah_clone.clone();
             let is_loading_clone2 = is_loading_clone.clone();
             let action = move |key: Option<String>| {
+                let user_info = UserInfo {
+                    username: username.clone(),
+                    password: password.clone(),
+                    api_key: key,
+                };
                 ah_clone2.set(ApiHandler {
                     user_info: user_info.clone(),
-                    api_key: key,
                 });
                 is_loading_clone2.set(false);
             };
@@ -43,11 +49,6 @@ fn app() -> Html {
         },
         (),
     );
-    console::log_1(&"hejsan".into());
-    match &api_handler.api_key {
-        Some(k) => console::log_1(&k.into()),
-        None => console::log_1(&"no key".into()),
-    }
 
     if *is_loading == true {
         return html! {<div>{"Loading"}</div>};
@@ -56,7 +57,7 @@ fn app() -> Html {
     html! {
             <ContextProvider<ApiHandler> context={(*api_handler).clone()}>
             {
-                if (*api_handler).api_key == None {
+                if (*api_handler).user_info.api_key == None {
                     html! {<Home api_handler={api_handler.clone()}/>}
                 } else {
                     html!{

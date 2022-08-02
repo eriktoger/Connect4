@@ -48,7 +48,12 @@ impl MongoRepo {
 
         let username = "admin".to_string();
         let password = "admin".to_string();
-        let admin = UserInfo { username, password };
+        let api_key = Some("admin".to_string());
+        let admin = UserInfo {
+            username,
+            password,
+            api_key,
+        };
         let _ = user_col.insert_one(admin, None).await;
 
         MongoRepo {
@@ -77,6 +82,18 @@ impl MongoRepo {
             }
             None => None,
         }
+    }
+
+    pub async fn create_user(&self, user: UserInfo) -> Option<String> {
+        println!("{}{}", user.username, user.password);
+        let api_key = Some(Uuid::new_v4().to_string());
+        let new_user = UserInfo {
+            username: user.username,
+            password: user.password,
+            api_key: api_key.clone(),
+        };
+        let _ = self.user_col.insert_one(new_user.clone(), None).await.ok();
+        api_key
     }
 }
 

@@ -2,12 +2,10 @@ use crate::constants::API_ROUTE;
 use common::UserInfo;
 use reqwasm::http::Request;
 use serde::de::DeserializeOwned;
-use web_sys::console;
 
 #[derive(Clone, PartialEq)]
 pub struct ApiHandler {
     pub user_info: UserInfo,
-    pub api_key: Option<String>,
 }
 
 impl ApiHandler {
@@ -25,13 +23,12 @@ impl ApiHandler {
             .unwrap_or_default();
 
         ApiHandler {
-            user_info: UserInfo { username, password },
-            api_key: None,
+            user_info: UserInfo {
+                username,
+                password,
+                api_key: None,
+            },
         }
-    }
-
-    pub fn set_user_info(&mut self, user_info: UserInfo) {
-        self.user_info = user_info;
     }
 
     pub fn get<T: 'static, U: 'static>(&self, route: String, action: U)
@@ -39,7 +36,6 @@ impl ApiHandler {
         T: DeserializeOwned,
         U: Fn(T) -> (),
     {
-        console::log_1(&"hejsan2".into());
         wasm_bindgen_futures::spawn_local(async move {
             let url = format!("{}{}", API_ROUTE, route);
 

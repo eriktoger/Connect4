@@ -1,6 +1,5 @@
-use crate::{api_handler::ApiHandler, constants::API_ROUTE};
+use crate::api_handler::ApiHandler;
 use common::UserInfo;
-use reqwasm::http::Request;
 use std::{
     cell::RefCell,
     rc::{self, Rc},
@@ -24,76 +23,31 @@ pub fn home(props: &HomeProps) -> Html {
     let signup_username = use_mut_ref(|| "".to_string());
     let signup_password = use_mut_ref(|| "".to_string());
 
-    let log_name = login_username.clone();
-    let log_pw = login_password.clone();
-
-    let api_handler_clone = props.api_handler.clone();
-    let login = Callback::from(move |event: MouseEvent| {
-        event.prevent_default();
-        let user_info = UserInfo {
-            username: log_name.borrow().clone(),
-            password: log_pw.borrow().clone(),
-        };
-        let api_handler_clone = api_handler_clone.clone();
-        let serialized = serde_json::to_string(&user_info).unwrap();
-
-        let log_name = log_name.clone();
-        let log_pw = log_pw.clone();
-        wasm_bindgen_futures::spawn_local(async move {
-            let url = format!("{}{}", API_ROUTE, "/login");
-            let api_handler_clone2 = api_handler_clone.clone();
-
-            let action = move |key: Option<String>| match key {
-                Some(key) => {
-                    let user_info = UserInfo {
-                        username: log_name.borrow().clone(),
-                        password: log_pw.borrow().clone(),
-                    };
-                    set_local_storage(user_info.clone());
-                    api_handler_clone2.set(ApiHandler {
-                        user_info,
-                        api_key: Some(key),
-                    });
-                }
-                None => (),
-            };
-
-            api_handler_clone.post("/login".to_string(), serialized, action);
-        });
-    });
-
-    let sign_name = signup_username.clone();
-    let sign_pw = signup_password.clone();
-    let signup = Callback::from(move |event: MouseEvent| {
-        event.prevent_default();
-        let user_info = UserInfo {
-            username: sign_name.borrow().clone(),
-            password: sign_pw.borrow().clone(),
-        };
-        let serialized = serde_json::to_string(&user_info).unwrap();
-        wasm_bindgen_futures::spawn_local(async move {
-            let url = format!("{}{}", API_ROUTE, "/signup");
-            Request::post(&url).body(&serialized).send().await.unwrap();
-            // if success save to context and go to lobby
-        });
-    });
-
     html! {
     <div class={{style_sheet}}>
         <div class="login">
             <h1>{"Already a member?"}</h1>
             <Form
-                username_ref={login_username}
-                password_ref={login_password}
-                on_submit={login} />
+                username_ref={login_username.clone()}
+                password_ref={login_password.clone()}
+                on_submit={get_handle_user(
+                    "/login".to_string(),login_username.clone(),
+                    login_password.clone(),
+                    props.api_handler.clone())
+                } />
 
         </div>
         <div class="signup">
             <h2> {"Need an account?"}</h2>
             <Form
-                username_ref={signup_username}
-                password_ref={signup_password}
-                on_submit={signup} />
+                username_ref={signup_username.clone()}
+                password_ref={signup_password.clone()}
+                on_submit={get_handle_user(
+                    "/signup".to_string(),signup_username.clone(),
+                    signup_password.clone(),
+                    props.api_handler.clone())
+                } />
+
         </div>
     </div>
         }
@@ -139,6 +93,46 @@ fn form(props: &FormProps) -> Html {
 
 fn set_local_storage(user_info: UserInfo) {
     let local_storage = web_sys::window().unwrap().local_storage().unwrap().unwrap();
-    let username = local_storage.set_item("username", &user_info.username);
-    let password = local_storage.set_item("password", &user_info.password);
+    let _ = local_storage.set_item("username", &user_info.username);
+    let _ = local_storage.set_item("password", &user_info.password);
+}
+
+fn get_handle_user(
+    route: String,
+    log_name: Rc<RefCell<String>>,
+    log_pw: Rc<RefCell<String>>,
+    api_handler: UseStateHandle<ApiHandler>,
+) -> Callback<MouseEvent> {
+    Callback::from(move |event: MouseEvent| {
+        event.prevent_default();
+        let user_info = UserInfo {
+            username: log_name.borrow().clone(),
+            password: log_pw.borrow().clone(),
+            api_key: None,
+        };
+        let api_handler_clone = api_handler.clone();
+        let serialized = serde_json::to_string(&user_info).unwrap();
+
+        let log_name = log_name.clone();
+        let log_pw = log_pw.clone();
+        let route = route.clone();
+        wasm_bindgen_futures::spawn_local(async move {
+            let api_handler_clone2 = api_handler_clone.clone();
+
+            let action = move |key: Option<String>| match key {
+                Some(key) => {
+                    let user_info = UserInfo {
+                        username: log_name.borrow().clone(),
+                        password: log_pw.borrow().clone(),
+                        api_key: Some(key),
+                    };
+                    set_local_storage(user_info.clone());
+                    api_handler_clone2.set(ApiHandler { user_info });
+                }
+                None => (),
+            };
+
+            api_handler_clone.post(route, serialized, action);
+        });
+    })
 }

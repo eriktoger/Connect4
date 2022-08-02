@@ -264,6 +264,13 @@ async fn login(main_state: &State<MainState>, data: &str) -> String {
     serde_json::to_string(&response).unwrap()
 }
 
+#[post("/signup", data = "<data>")]
+async fn create_user(main_state: &State<MainState>, data: &str) -> String {
+    let deserialized: UserInfo = serde_json::from_str(&data).unwrap();
+    let response = main_state.db.create_user(deserialized).await;
+    serde_json::to_string(&response).unwrap()
+}
+
 #[launch]
 async fn rocket() -> _ {
     // I need to move the game_rooms to a database
@@ -305,7 +312,8 @@ async fn rocket() -> _ {
                 join_game,
                 update_game,
                 get_games,
-                login
+                login,
+                create_user
             ],
         )
 }
