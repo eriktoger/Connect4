@@ -12,9 +12,7 @@ use yew_router::{BrowserRouter, Switch};
 #[function_component(App)]
 fn app() -> Html {
     let api_handler = use_state(|| ApiHandler::new());
-
     let is_loading = use_state(|| true);
-
     let ah_clone = api_handler.clone();
     let is_loading_clone = is_loading.clone();
 

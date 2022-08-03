@@ -68,7 +68,7 @@ fn dropToken(props: &DropTokenProps) -> Html {
         };
         let serialized = serde_json::to_string(&new_move).unwrap();
         wasm_bindgen_futures::spawn_local(async move {
-            let url = format!("{}{}", API_ROUTE, "/move");
+            let url = format!("{}{}", API_ROUTE, "/games/move");
             Request::post(&url).body(&serialized).send().await.unwrap();
         });
     });

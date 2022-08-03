@@ -4,20 +4,19 @@ use common::Game;
 use gloo_events::EventListener;
 use wasm_bindgen::JsCast;
 use web_sys::{Event, EventSource, MessageEvent};
-use yew::{function_component, html, use_state, Properties};
+use yew::{function_component, html, use_context, use_state, Properties};
 
-use crate::constants::API_ROUTE;
+use crate::{api_handler::ApiHandler, constants::API_ROUTE};
 
 #[derive(Properties, PartialEq)]
 pub struct GameRoomProps {
     pub game_id: String,
-    pub player_id: String,
 }
 
 #[function_component(GameRoom)]
 pub fn game_room(props: &GameRoomProps) -> Html {
-    let url = format!("{}{}{}", API_ROUTE, "/events/", props.game_id);
-
+    let url = format!("{}{}{}", API_ROUTE, "/game-events/", props.game_id);
+    let ctx = use_context::<ApiHandler>().expect("Api handler context missing");
     let es = use_state(|| EventSource::new(&url).unwrap());
 
     let game = use_state(|| Game {
@@ -42,7 +41,7 @@ pub fn game_room(props: &GameRoomProps) -> Html {
     html! {
        <div>
         <span>{"this is a game room nr: "}{props.game_id.clone()}</span>
-        <Board game={(*game).clone()} player_id={props.player_id.clone()} />
+        <Board game={(*game).clone()} player_id={ctx.user_info.username} />
        </div>
     }
 }

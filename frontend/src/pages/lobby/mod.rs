@@ -4,12 +4,9 @@ use gloo_events::EventListener;
 use reqwasm::http::Request;
 use serde::{Deserialize, Serialize};
 use stylist::Style;
-use uuid::Uuid;
 use wasm_bindgen::JsCast;
 use web_sys::{Event, EventSource, MessageEvent, MouseEvent};
-use yew::{
-    function_component, html, use_context, use_effect_with_deps, use_ref, use_state, Callback,
-};
+use yew::{function_component, html, use_context, use_effect_with_deps, use_state, Callback};
 use yew_router::{history::AnyHistory, history::History, hooks::use_history};
 
 #[derive(Serialize, Deserialize)]
@@ -22,7 +19,6 @@ struct UserAuth {
 pub fn lobby() -> Html {
     let style_sheet = Style::new(include_str!("style.css")).expect("Css failed to load");
     let games = use_state(|| vec![]);
-    let player_id = use_ref(|| Uuid::new_v4().to_string());
     let ctx = use_context::<ApiHandler>().expect("Api handler context missing");
 
     let games_clone = games.clone();
@@ -59,13 +55,13 @@ pub fn lobby() -> Html {
 
     let history = use_history().unwrap();
     let history_clone = history.clone();
-    let player_id_clone = player_id.clone();
+    let username = ctx.user_info.username.clone();
     html! {
         <main class={style_sheet}>
             <div>{"Welcome to the lobby!"}</div>
             <div class="card-container">
                 {for (*games).iter().map(move |game|{
-                    let create_game = get_join_game(game.clone(),player_id.to_string(),history.clone());
+                    let create_game = get_join_game(game.clone(),username.clone(),history.clone());
                     html!{
                         <div class="game-card" onclick={create_game}>
                             <h1>{"id:"}{&game.id}</h1>
@@ -75,40 +71,33 @@ pub fn lobby() -> Html {
                     }}
                 )}
              </div>
-             <button onclick={get_create_game(player_id_clone.to_string(), history_clone,ctx)}>{"Create new game"}</button>
+             <button onclick={get_create_game( history_clone,ctx)}>{"Create new game"}</button>
        </main>
     }
 }
 
-fn get_join_game(game: Game, player_id: String, history: AnyHistory) -> yew::Callback<MouseEvent> {
+fn get_join_game(game: Game, user_name: String, history: AnyHistory) -> yew::Callback<MouseEvent> {
     Callback::from(move |_| {
-        let player_id = player_id.clone();
+        let user_name = user_name.clone();
         let game = game.clone();
         let history = history.clone();
 
         wasm_bindgen_futures::spawn_local(async move {
             let new_player = NewPlayer {
-                player: player_id.to_string(),
+                player: user_name.to_string(),
                 game: game.clone().id,
             };
             let serialized = serde_json::to_string(&new_player).unwrap();
             let url = format!("{}{}", API_ROUTE, "/games/join");
             let _ = Request::post(&url).body(&serialized).send().await;
-            history.push(Route::Room {
-                game_id: game.id,
-                player_id: player_id.to_string(),
-            });
+            history.push(Route::Room { game_id: game.id });
         });
     })
 }
 
-fn get_create_game(
-    player_id: String,
-    history: AnyHistory,
-    ctx: ApiHandler,
-) -> yew::Callback<MouseEvent> {
+fn get_create_game(history: AnyHistory, ctx: ApiHandler) -> yew::Callback<MouseEvent> {
     Callback::from(move |_| {
-        let player_id = player_id.clone();
+        let user_name = ctx.user_info.username.clone();
         let history = history.clone();
         let user_info = ctx.user_info.clone();
         wasm_bindgen_futures::spawn_local(async move {
@@ -119,7 +108,7 @@ fn get_create_game(
             };
             let serialized = serde_json::to_string(&user_auth).unwrap();
             let response: String = Request::post(&url)
-                .body(player_id.to_string())
+                .body(user_name.to_string())
                 .header("x-api-key", &serialized)
                 .send()
                 .await
@@ -128,10 +117,7 @@ fn get_create_game(
                 .await
                 .unwrap();
 
-            history.push(Route::Room {
-                game_id: response,
-                player_id: player_id.to_string(),
-            });
+            history.push(Route::Room { game_id: response });
         });
     })
 }

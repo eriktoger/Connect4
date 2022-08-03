@@ -3,11 +3,7 @@ extern crate dotenv;
 use crate::game_model::Channel;
 use common::{Game, UserInfo};
 use dotenv::dotenv;
-use mongodb::{
-    bson::{doc, Bson},
-    results::InsertOneResult,
-    Client, Collection,
-};
+use mongodb::{bson::doc, results::InsertOneResult, Client, Collection};
 use rocket::futures::StreamExt;
 use uuid::Uuid;
 
@@ -56,6 +52,16 @@ impl MongoRepo {
         };
         let _ = user_col.insert_one(admin, None).await;
 
+        let username = "admin2".to_string();
+        let password = "admin2".to_string();
+        let api_key = Some("admin2".to_string());
+        let admin = UserInfo {
+            username,
+            password,
+            api_key,
+        };
+        let _ = user_col.insert_one(admin, None).await;
+
         MongoRepo {
             game_col,
             channel_col,
@@ -73,7 +79,7 @@ impl MongoRepo {
             .unwrap();
 
         match user {
-            Some(val) => {
+            Some(_) => {
                 let api_key = Uuid::new_v4().to_string();
                 let update = doc! { "$set": {"api_key": api_key.clone()}};
                 let _ = self.user_col.update_one(filter, update, None).await;
@@ -102,11 +108,7 @@ impl MongoRepo {
             .await
             .ok()
             .unwrap();
-
-        match user {
-            Some(val) => true,
-            None => false,
-        }
+        user.is_some()
     }
 }
 
@@ -158,7 +160,6 @@ impl MongoRepo {
     pub async fn join_game(&self, id: String, player_2: String) {
         let query = doc! {"id": id.clone()};
         let update = doc! { "$set": {"player_2": player_2.clone()}};
-        println!("{} {}", id, player_2);
         self.game_col
             .update_one(query, update, None)
             .await
@@ -167,7 +168,6 @@ impl MongoRepo {
 
     pub async fn update_one_game(&self, replacement: Game) {
         let filter = doc! {"id": replacement.id.clone()};
-        println!("222 {}", replacement.turn);
         self.game_col
             .replace_one(filter, replacement, None)
             .await
@@ -198,16 +198,17 @@ impl MongoRepo {
             .find_one(filter, None)
             .await
             .ok()
-            .expect("Error getting channel")
+            .expect("Error finding channel")
     }
 
-    pub async fn update_one_channel(&self, id: Bson, taken: bool) {
-        let filter = doc! {"_id": id};
-        let update = doc! { "taken": taken };
+    pub async fn update_one_channel(&self, id: String, taken: bool) {
+        println!("{id}");
+        let filter = doc! {"id": id};
+        let update = doc! { "$set": { "taken": taken }};
         self.channel_col
             .update_one(filter, update, None)
             .await
             .ok()
-            .expect("Error getting channel");
+            .expect("Error updating channel");
     }
 }

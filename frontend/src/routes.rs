@@ -9,15 +9,15 @@ use yew_router::Routable;
 pub enum Route {
     #[at("/lobby")]
     Lobby,
-    #[at("/room/:game_id/:player_id")]
-    Room { game_id: String, player_id: String },
+    #[at("/room/:game_id")]
+    Room { game_id: String },
 }
 
 pub fn switch(routes: &Route) -> Html {
     match routes {
         Route::Lobby => html! {<Lobby/>},
-        Route::Room { game_id, player_id } => {
-            html! {<GameRoom game_id={game_id.clone()} player_id={player_id.clone()} />}
+        Route::Room { game_id } => {
+            html! {<GameRoom game_id={game_id.clone()} />}
         }
     }
 }

@@ -26,3 +26,10 @@ pub struct UserInfo {
     pub password: String,
     pub api_key: Option<String>,
 }
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Move {
+    pub game_id: String,
+    pub column: usize,
+    pub player_id: String,
+}
