@@ -5,6 +5,7 @@ pub struct NewPlayer {
     pub game: String,
     pub player: String,
 }
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Game {
     pub id: String,
@@ -13,10 +14,11 @@ pub struct Game {
     pub grid: [[String; 7]; 6],
     pub turn: String,
     pub channel: String,
+    pub status: String,
 }
 impl PartialEq for Game {
     fn eq(&self, other: &Self) -> bool {
-        self.id == other.id && self.turn == other.turn
+        self.id == other.id && self.turn == other.turn && self.status == other.status
     }
 }
 

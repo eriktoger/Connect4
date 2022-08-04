@@ -3,8 +3,8 @@ use board::Board;
 use common::Game;
 use gloo_events::EventListener;
 use wasm_bindgen::JsCast;
-use web_sys::{Event, EventSource, MessageEvent};
-use yew::{function_component, html, use_context, use_state, Properties};
+use web_sys::{Event, EventSource, MessageEvent, Request};
+use yew::{function_component, html, use_context, use_effect_with_deps, use_state, Properties};
 
 use crate::{api_handler::ApiHandler, constants::API_ROUTE};
 
@@ -15,8 +15,8 @@ pub struct GameRoomProps {
 
 #[function_component(GameRoom)]
 pub fn game_room(props: &GameRoomProps) -> Html {
-    let url = format!("{}{}{}", API_ROUTE, "/game-events/", props.game_id);
     let ctx = use_context::<ApiHandler>().expect("Api handler context missing");
+    let url = format!("{}{}{}", API_ROUTE, "/game-events/", props.game_id);
     let es = use_state(|| EventSource::new(&url).unwrap());
 
     let game = use_state(|| Game {
@@ -26,6 +26,7 @@ pub fn game_room(props: &GameRoomProps) -> Html {
         grid: Default::default(),
         channel: Default::default(),
         turn: Default::default(),
+        status: Default::default(),
     });
 
     let game_clone = game.clone();
@@ -38,10 +39,26 @@ pub fn game_room(props: &GameRoomProps) -> Html {
         })
     });
 
+    let game_clone = game.clone();
+    let game_id = props.game_id.clone();
+    let username = ctx.user_info.username.clone();
+    use_effect_with_deps(
+        move |_| {
+            let game_clone = game_clone.clone();
+            let url = format!("{}{}", "/games/", game_id);
+            let action = move |new_game: Game| {
+                game_clone.set(new_game);
+            };
+            ctx.get(url, action);
+            || ()
+        },
+        (),
+    );
     html! {
        <div>
         <span>{"this is a game room nr: "}{props.game_id.clone()}</span>
-        <Board game={(*game).clone()} player_id={ctx.user_info.username} />
+        <Board game={(*game).clone()} player_id={username} />
+        <h2>{"Game Status:"} {(*game).status.clone()}</h2>
        </div>
     }
 }

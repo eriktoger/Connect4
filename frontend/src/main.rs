@@ -61,7 +61,8 @@ fn app() -> Html {
                     html!{
                         <BrowserRouter>
                             <Switch<Route> render={Switch::render(switch)} />
-                        </BrowserRouter>}
+                        </BrowserRouter>
+                    }
                 }
               }
             </ContextProvider<ApiHandler>>

@@ -115,19 +115,8 @@ impl MongoRepo {
 // games
 impl MongoRepo {
     pub async fn create_game(&self, new_game: Game) -> InsertOneResult {
-        let channel = self.get_available_channel().await.unwrap().id;
-
-        let new_doc = Game {
-            id: new_game.id,
-            player_1: new_game.player_1,
-            player_2: new_game.player_2,
-            grid: new_game.grid,
-            turn: new_game.turn,
-            channel,
-        };
-
         self.game_col
-            .insert_one(new_doc, None)
+            .insert_one(new_game, None)
             .await
             .expect("Error creating user")
     }
@@ -159,7 +148,7 @@ impl MongoRepo {
 
     pub async fn join_game(&self, id: String, player_2: String) {
         let query = doc! {"id": id.clone()};
-        let update = doc! { "$set": {"player_2": player_2.clone()}};
+        let update = doc! { "$set": {"player_2": player_2.clone(),"status":"active"}};
         self.game_col
             .update_one(query, update, None)
             .await

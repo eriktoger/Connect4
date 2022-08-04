@@ -116,6 +116,8 @@ fn get_handle_user(
         let log_name = log_name.clone();
         let log_pw = log_pw.clone();
         let route = route.clone();
+
+        //this wasm_bindgen is not needed
         wasm_bindgen_futures::spawn_local(async move {
             let api_handler_clone2 = api_handler_clone.clone();
 
