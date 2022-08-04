@@ -2,7 +2,7 @@ mod api_handler;
 mod constants;
 mod pages;
 mod routes;
-use crate::pages::home::Home;
+use crate::pages::login::Login;
 use api_handler::ApiHandler;
 use common::UserInfo;
 use routes::{switch, Route};
@@ -56,7 +56,7 @@ fn app() -> Html {
             <ContextProvider<ApiHandler> context={(*api_handler).clone()}>
             {
                 if (*api_handler).user_info.api_key == None {
-                    html! {<Home api_handler={api_handler.clone()}/>}
+                    html! {<Login api_handler={api_handler.clone()}/>}
                 } else {
                     html!{
                         <BrowserRouter>

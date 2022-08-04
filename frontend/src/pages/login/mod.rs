@@ -14,8 +14,8 @@ pub struct HomeProps {
     pub api_handler: UseStateHandle<ApiHandler>,
 }
 
-#[function_component(Home)]
-pub fn home(props: &HomeProps) -> Html {
+#[function_component(Login)]
+pub fn login(props: &HomeProps) -> Html {
     let style_sheet = Style::new(include_str!("style.css")).expect("Css failed to load!");
     let login_username = use_mut_ref(|| "".to_string());
     let login_password = use_mut_ref(|| "".to_string());
