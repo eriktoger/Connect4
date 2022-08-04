@@ -1,11 +1,9 @@
 use crate::{api_handler::ApiHandler, constants::API_ROUTE, routes::Route};
 use common::{Game, NewPlayer};
-use gloo_events::EventListener;
 use reqwasm::http::Request;
 use serde::{Deserialize, Serialize};
 use stylist::Style;
-use wasm_bindgen::JsCast;
-use web_sys::{Event, EventSource, MessageEvent, MouseEvent};
+use web_sys::MouseEvent;
 use yew::{function_component, html, use_context, use_effect_with_deps, use_state, Callback};
 use yew_router::{history::AnyHistory, history::History, hooks::use_history};
 
@@ -23,31 +21,25 @@ pub fn lobby() -> Html {
 
     let games_clone = games.clone();
     let url = format!("{}{}", API_ROUTE, "/lobby-events/");
-    let es = use_state(|| EventSource::new(&url).unwrap());
+
+    let api_handler = ctx.clone();
     use_state(|| {
-        EventListener::new(&es, "message", move |event: &Event| {
-            let e = event.dyn_ref::<MessageEvent>().unwrap();
-            let text = e.data().as_string().unwrap();
-            let deserialized: Vec<Game> = serde_json::from_str(&text).unwrap();
-            games_clone.set(deserialized);
-        })
+        let url = "/lobby-events/".to_string();
+        let action = move |new_games: Vec<Game>| {
+            games_clone.set(new_games);
+        };
+        ApiHandler::get_event_listener(url, action)
     });
 
     let games_clone = games.clone();
+    let ctx_clone = ctx.clone();
     use_effect_with_deps(
-        |_| {
-            wasm_bindgen_futures::spawn_local(async move {
-                let url = format!("{}{}", API_ROUTE, "/games");
-
-                let response: Vec<Game> = Request::get(&url)
-                    .send()
-                    .await
-                    .unwrap()
-                    .json()
-                    .await
-                    .unwrap();
-                games_clone.set(response);
-            });
+        move |_| {
+            let action = move |new_games: Vec<Game>| {
+                games_clone.set(new_games);
+            };
+            let url = "/games/".to_string();
+            ctx_clone.get(url, action);
             || ()
         },
         (),

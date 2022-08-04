@@ -1,7 +1,10 @@
 use crate::constants::API_ROUTE;
 use common::UserInfo;
+use gloo_events::EventListener;
 use reqwasm::http::Request;
 use serde::de::DeserializeOwned;
+use wasm_bindgen::JsCast;
+use web_sys::{Event, EventSource, MessageEvent};
 
 #[derive(Clone, PartialEq)]
 pub struct ApiHandler {
@@ -68,5 +71,20 @@ impl ApiHandler {
                 .unwrap();
             action(response)
         });
+    }
+
+    pub fn get_event_listener<T: 'static, U: 'static>(route: String, action: U) -> EventListener
+    where
+        T: DeserializeOwned,
+        U: Fn(T) -> (),
+    {
+        let url = format!("{}{}", API_ROUTE, route);
+        let es = EventSource::new(&url).unwrap();
+        EventListener::new(&es, "message", move |event: &Event| {
+            let e = event.dyn_ref::<MessageEvent>().unwrap();
+            let text = e.data().as_string().unwrap();
+            let deserialized: T = serde_json::from_str(&text).unwrap();
+            action(deserialized);
+        })
     }
 }

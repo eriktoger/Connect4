@@ -7,7 +7,7 @@ use yew_router::Routable;
 
 #[derive(Clone, Routable, PartialEq)]
 pub enum Route {
-    #[at("/lobby")]
+    #[at("/")]
     Lobby,
     #[at("/room/:game_id")]
     Room { game_id: String },
