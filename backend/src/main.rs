@@ -4,10 +4,7 @@ mod game_room;
 mod games;
 mod mongodb_repo;
 mod structs;
-use crate::games::{
-    create_game, get_games, get_one_game, join_game, options_game, options_join_game,
-    options_one_game, play_move, update_game,
-};
+use crate::games::{create_game, get_games, get_one_game, join_game, play_move, update_game};
 use common::{Game, UserInfo};
 use events::{game_events, lobby_events};
 #[macro_use]
@@ -61,6 +58,9 @@ async fn create_user(main_state: &State<MainState>, data: &str) -> String {
     serde_json::to_string(&response).unwrap()
 }
 
+#[options("/<_..>")]
+pub fn all_options() {}
+
 #[launch]
 async fn rocket() -> _ {
     let mut game_channels = HashMap::new();
@@ -100,9 +100,7 @@ async fn rocket() -> _ {
                 get_one_game,
                 login,
                 create_user,
-                options_game,
-                options_join_game,
-                options_one_game,
+                all_options
             ],
         )
 }

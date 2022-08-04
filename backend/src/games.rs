@@ -21,11 +21,6 @@ pub async fn get_one_game(main_state: &State<MainState>, game_id: String) -> Str
     let k: Game = main_state.db.get_one_game(game_id).await.unwrap();
     serde_json::to_string(&k).unwrap()
 }
-#[options("/games/<_game_id>")]
-pub fn options_one_game(_game_id: String) {}
-
-#[options("/games")]
-pub fn options_game() {}
 
 #[post("/games", data = "<player_1>")]
 pub async fn create_game(
@@ -64,8 +59,6 @@ pub async fn update_game(main_state: &State<MainState>, data: String) {
     let deserialized: Game = serde_json::from_str(&data).unwrap();
     main_state.db.update_one_game(deserialized).await;
 }
-#[options("/games/join")]
-pub fn options_join_game() {}
 
 #[post("/games/join", data = "<data>")]
 pub async fn join_game(
