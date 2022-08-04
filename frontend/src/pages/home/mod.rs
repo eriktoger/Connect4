@@ -17,7 +17,6 @@ pub struct HomeProps {
 #[function_component(Home)]
 pub fn home(props: &HomeProps) -> Html {
     let style_sheet = Style::new(include_str!("style.css")).expect("Css failed to load!");
-
     let login_username = use_mut_ref(|| "".to_string());
     let login_password = use_mut_ref(|| "".to_string());
     let signup_username = use_mut_ref(|| "".to_string());
@@ -32,8 +31,7 @@ pub fn home(props: &HomeProps) -> Html {
                 password_ref={login_password.clone()}
                 on_submit={get_handle_user(
                     "/login".to_string(),login_username.clone(),
-                    login_password.clone(),
-                    props.api_handler.clone())
+                    login_password.clone(),props.api_handler.clone())
                 } />
 
         </div>
@@ -44,8 +42,8 @@ pub fn home(props: &HomeProps) -> Html {
                 password_ref={signup_password.clone()}
                 on_submit={get_handle_user(
                     "/signup".to_string(),signup_username.clone(),
-                    signup_password.clone(),
-                    props.api_handler.clone())
+                    signup_password.clone(),props.api_handler.clone())
+
                 } />
 
         </div>
@@ -91,50 +89,44 @@ fn form(props: &FormProps) -> Html {
     }
 }
 
-fn set_local_storage(user_info: UserInfo) {
+fn set_local_storage(username: String, password: String) {
     let local_storage = web_sys::window().unwrap().local_storage().unwrap().unwrap();
-    let _ = local_storage.set_item("username", &user_info.username);
-    let _ = local_storage.set_item("password", &user_info.password);
+    let _ = local_storage.set_item("username", &username);
+    let _ = local_storage.set_item("password", &password);
 }
 
 fn get_handle_user(
     route: String,
-    log_name: Rc<RefCell<String>>,
-    log_pw: Rc<RefCell<String>>,
+    username: Rc<RefCell<String>>,
+    password: Rc<RefCell<String>>,
     api_handler: UseStateHandle<ApiHandler>,
 ) -> Callback<MouseEvent> {
     Callback::from(move |event: MouseEvent| {
         event.prevent_default();
         let user_info = UserInfo {
-            username: log_name.borrow().clone(),
-            password: log_pw.borrow().clone(),
+            username: username.borrow().clone(),
+            password: password.borrow().clone(),
             api_key: None,
         };
-        let api_handler_clone = api_handler.clone();
         let serialized = serde_json::to_string(&user_info).unwrap();
 
-        let log_name = log_name.clone();
-        let log_pw = log_pw.clone();
-        let route = route.clone();
+        let api_handler = api_handler.clone();
+        let username = username.borrow().clone();
+        let password = password.borrow().clone();
 
-        //this wasm_bindgen is not needed
-        wasm_bindgen_futures::spawn_local(async move {
-            let api_handler_clone2 = api_handler_clone.clone();
-
-            let action = move |key: Option<String>| match key {
-                Some(key) => {
-                    let user_info = UserInfo {
-                        username: log_name.borrow().clone(),
-                        password: log_pw.borrow().clone(),
-                        api_key: Some(key),
-                    };
-                    set_local_storage(user_info.clone());
-                    api_handler_clone2.set(ApiHandler { user_info });
-                }
-                None => (),
-            };
-
-            api_handler_clone.post(route, serialized, action);
-        });
+        let action = move |key: Option<String>| match key {
+            Some(api_key) => {
+                set_local_storage(username.clone(), password.clone());
+                api_handler.set(ApiHandler {
+                    user_info: UserInfo {
+                        username: username.clone(),
+                        password: password.clone(),
+                        api_key: Some(api_key),
+                    },
+                })
+            }
+            None => (),
+        };
+        ApiHandler::post(route.clone(), serialized, action);
     })
 }

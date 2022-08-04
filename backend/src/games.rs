@@ -1,5 +1,5 @@
 use crate::structs::{MainState, UserAuth};
-use common::{Game, Move, NewPlayer};
+use common::{Empty, Game, GameId, Move, NewPlayer};
 use rocket::State;
 use std::{
     sync::{
@@ -21,6 +21,8 @@ pub async fn get_one_game(main_state: &State<MainState>, game_id: String) -> Str
     let k: Game = main_state.db.get_one_game(game_id).await.unwrap();
     serde_json::to_string(&k).unwrap()
 }
+#[options("/games/<_game_id>")]
+pub fn options_one_game(_game_id: String) {}
 
 #[options("/games")]
 pub fn options_game() {}
@@ -33,7 +35,10 @@ pub async fn create_game(
 ) -> String {
     let avaiable_channel = main_state.db.get_available_channel().await;
     if avaiable_channel.is_none() {
-        return "".to_string();
+        return serde_json::to_string(&GameId {
+            game_id: "".to_string(),
+        })
+        .unwrap();
     }
 
     let ac = avaiable_channel.unwrap();
@@ -51,7 +56,7 @@ pub async fn create_game(
     let _ = main_state.db.create_game(new_game).await;
     let games = main_state.db.get_all_games().await;
     let _res = main_state.lobby_channel.send(games);
-    id
+    serde_json::to_string(&GameId { game_id: id }).unwrap()
 }
 
 #[put("/games", data = "<data>")]
@@ -59,17 +64,23 @@ pub async fn update_game(main_state: &State<MainState>, data: String) {
     let deserialized: Game = serde_json::from_str(&data).unwrap();
     main_state.db.update_one_game(deserialized).await;
 }
+#[options("/games/join")]
+pub fn options_join_game() {}
 
 #[post("/games/join", data = "<data>")]
-pub async fn join_game(main_state: &State<MainState>, data: String) {
+pub async fn join_game(
+    main_state: &State<MainState>,
+    data: String,
+    _user_auth: UserAuth,
+) -> String {
     let deserialized: NewPlayer = serde_json::from_str(&data).unwrap();
     let game = main_state
         .db
         .get_one_game(deserialized.game.clone())
         .await
         .unwrap();
-    if game.player_2 != "" {
-        return;
+    if game.status != "not_started" {
+        return serde_json::to_string(&Empty {}).unwrap();
     }
     main_state
         .db
@@ -80,6 +91,7 @@ pub async fn join_game(main_state: &State<MainState>, data: String) {
 
     let sender = main_state.game_channels.get(&game.channel).unwrap();
     let _ = sender.send(game);
+    serde_json::to_string(&Empty {}).unwrap()
 }
 
 #[post("/games/move", data = "<data>")]

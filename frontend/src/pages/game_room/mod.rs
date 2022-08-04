@@ -41,7 +41,7 @@ pub fn game_room(props: &GameRoomProps) -> Html {
             let action = move |new_game: Game| {
                 game_clone.set(new_game);
             };
-            ctx.get(url, action);
+            ctx.auth_get(url, action);
             || ()
         },
         (),

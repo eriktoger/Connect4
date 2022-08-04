@@ -1,28 +1,17 @@
-use crate::{api_handler::ApiHandler, constants::API_ROUTE, routes::Route};
-use common::{Game, NewPlayer};
-use reqwasm::http::Request;
-use serde::{Deserialize, Serialize};
+use crate::{api_handler::ApiHandler, routes::Route};
+use common::{Empty, Game, GameId, NewPlayer};
 use stylist::Style;
 use web_sys::MouseEvent;
 use yew::{function_component, html, use_context, use_effect_with_deps, use_state, Callback};
 use yew_router::{history::AnyHistory, history::History, hooks::use_history};
 
-#[derive(Serialize, Deserialize)]
-struct UserAuth {
-    api_key: String,
-    username: String,
-}
-
 #[function_component(Lobby)]
 pub fn lobby() -> Html {
     let style_sheet = Style::new(include_str!("style.css")).expect("Css failed to load");
     let games = use_state(|| vec![]);
-    let ctx = use_context::<ApiHandler>().expect("Api handler context missing");
-
+    let api_handler = use_context::<ApiHandler>().expect("Api handler context missing");
     let games_clone = games.clone();
-    let url = format!("{}{}", API_ROUTE, "/lobby-events/");
 
-    let api_handler = ctx.clone();
     use_state(|| {
         let url = "/lobby-events/".to_string();
         let action = move |new_games: Vec<Game>| {
@@ -32,14 +21,14 @@ pub fn lobby() -> Html {
     });
 
     let games_clone = games.clone();
-    let ctx_clone = ctx.clone();
+
     use_effect_with_deps(
         move |_| {
             let action = move |new_games: Vec<Game>| {
                 games_clone.set(new_games);
             };
             let url = "/games/".to_string();
-            ctx_clone.get(url, action);
+            ApiHandler::get(url, action);
             || ()
         },
         (),
@@ -47,13 +36,13 @@ pub fn lobby() -> Html {
 
     let history = use_history().unwrap();
     let history_clone = history.clone();
-    let username = ctx.user_info.username.clone();
+    let api_handler_clone = api_handler.clone();
     html! {
         <main class={style_sheet}>
             <div>{"Welcome to the lobby!"}</div>
             <div class="card-container">
                 {for (*games).iter().map(move |game|{
-                    let create_game = get_join_game(game.clone(),username.clone(),history.clone());
+                    let create_game = get_join_game(game.clone(),history.clone(),api_handler_clone.clone());
                     html!{
                         <div class="game-card" onclick={create_game}>
                             <h1>{"id:"}{&game.id}</h1>
@@ -63,53 +52,47 @@ pub fn lobby() -> Html {
                     }}
                 )}
              </div>
-             <button onclick={get_create_game( history_clone,ctx)}>{"Create new game"}</button>
+             <button onclick={get_create_game( history_clone,api_handler.clone())}>{"Create new game"}</button>
        </main>
     }
 }
 
-fn get_join_game(game: Game, user_name: String, history: AnyHistory) -> yew::Callback<MouseEvent> {
+fn get_join_game(
+    game: Game,
+    history: AnyHistory,
+    api_handler: ApiHandler,
+) -> yew::Callback<MouseEvent> {
     Callback::from(move |_| {
-        let user_name = user_name.clone();
         let game = game.clone();
         let history = history.clone();
+        let route = "/games/join".to_string();
+        let new_player = NewPlayer {
+            player: api_handler.user_info.username.to_string(),
+            game: game.clone().id,
+        };
+        let serialized = serde_json::to_string(&new_player).unwrap();
 
-        wasm_bindgen_futures::spawn_local(async move {
-            let new_player = NewPlayer {
-                player: user_name.to_string(),
-                game: game.clone().id,
-            };
-            let serialized = serde_json::to_string(&new_player).unwrap();
-            let url = format!("{}{}", API_ROUTE, "/games/join");
-            let _ = Request::post(&url).body(&serialized).send().await;
-            history.push(Route::Room { game_id: game.id });
-        });
+        let action = move |_: Empty| {
+            history.push(Route::Room {
+                game_id: game.id.clone(),
+            })
+        };
+        api_handler.auth_post(route, serialized, action);
     })
 }
 
-fn get_create_game(history: AnyHistory, ctx: ApiHandler) -> yew::Callback<MouseEvent> {
+fn get_create_game(history: AnyHistory, api_handler: ApiHandler) -> yew::Callback<MouseEvent> {
     Callback::from(move |_| {
-        let user_name = ctx.user_info.username.clone();
+        let user_name = api_handler.user_info.username.clone();
         let history = history.clone();
-        let user_info = ctx.user_info.clone();
-        wasm_bindgen_futures::spawn_local(async move {
-            let url = format!("{}{}", API_ROUTE, "/games");
-            let user_auth = UserAuth {
-                username: user_info.username,
-                api_key: user_info.api_key.unwrap_or_default(),
-            };
-            let serialized = serde_json::to_string(&user_auth).unwrap();
-            let response: String = Request::post(&url)
-                .body(user_name.to_string())
-                .header("x-api-key", &serialized)
-                .send()
-                .await
-                .unwrap()
-                .text()
-                .await
-                .unwrap();
 
-            history.push(Route::Room { game_id: response });
-        });
+        let route = "/games".to_string();
+        let serialized = user_name.to_string();
+        let action = move |response: GameId| {
+            history.push(Route::Room {
+                game_id: response.game_id,
+            })
+        };
+        api_handler.auth_post(route, serialized, action);
     })
 }

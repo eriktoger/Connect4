@@ -2,10 +2,15 @@ use crate::constants::API_ROUTE;
 use common::UserInfo;
 use gloo_events::EventListener;
 use reqwasm::http::Request;
-use serde::de::DeserializeOwned;
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use wasm_bindgen::JsCast;
 use web_sys::{Event, EventSource, MessageEvent};
 
+#[derive(Serialize, Deserialize)]
+struct UserAuth {
+    api_key: String,
+    username: String,
+}
 #[derive(Clone, PartialEq)]
 pub struct ApiHandler {
     pub user_info: UserInfo,
@@ -34,7 +39,7 @@ impl ApiHandler {
         }
     }
 
-    pub fn get<T: 'static, U: 'static>(&self, route: String, action: U)
+    pub fn get<T: 'static, U: 'static>(route: String, action: U)
     where
         T: DeserializeOwned,
         U: Fn(T) -> (),
@@ -53,16 +58,69 @@ impl ApiHandler {
         });
     }
 
-    pub fn post<T: 'static, U: 'static>(&self, route: String, serialized_body: String, action: U)
+    pub fn auth_get<T: 'static, U: 'static>(&self, route: String, action: U)
+    where
+        T: DeserializeOwned,
+        U: Fn(T) -> (),
+    {
+        let user_auth = UserAuth {
+            username: self.user_info.username.clone(),
+            api_key: self.user_info.api_key.clone().unwrap_or_default(),
+        };
+        let serialized = serde_json::to_string(&user_auth).unwrap();
+        wasm_bindgen_futures::spawn_local(async move {
+            let url = format!("{}{}", API_ROUTE, route);
+            let response = Request::get(&url)
+                .header("x-api-key", &serialized)
+                .send()
+                .await
+                .unwrap()
+                .json()
+                .await
+                .unwrap();
+            action(response);
+        });
+    }
+
+    pub fn post<T: 'static, U: 'static>(route: String, serialized_body: String, action: U)
     where
         T: DeserializeOwned + Default,
         U: Fn(T) -> (),
     {
         wasm_bindgen_futures::spawn_local(async move {
             let url = format!("{}{}", API_ROUTE, route);
-
             let response = Request::post(&url)
                 .body(serialized_body)
+                .send()
+                .await
+                .unwrap()
+                .json()
+                .await
+                .unwrap();
+            action(response)
+        });
+    }
+
+    pub fn auth_post<T: 'static, U: 'static>(
+        &self,
+        route: String,
+        serialized_body: String,
+        action: U,
+    ) where
+        T: DeserializeOwned,
+        U: Fn(T) -> (),
+    {
+        let api_key = self.user_info.api_key.clone().unwrap_or_default();
+        let user_auth = UserAuth {
+            username: self.user_info.username.clone(),
+            api_key,
+        };
+        let serialized = serde_json::to_string(&user_auth).unwrap();
+        wasm_bindgen_futures::spawn_local(async move {
+            let url = format!("{}{}", API_ROUTE, route);
+            let response = Request::post(&url)
+                .body(serialized_body)
+                .header("x-api-key", &serialized)
                 .send()
                 .await
                 .unwrap()

@@ -41,7 +41,7 @@ fn app() -> Html {
             };
 
             is_loading_clone.set(true);
-            (*ah_clone).post("/login".to_string(), serialized, action);
+            ApiHandler::post("/login".to_string(), serialized, action);
 
             || ()
         },

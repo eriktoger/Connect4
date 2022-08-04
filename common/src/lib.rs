@@ -35,3 +35,11 @@ pub struct Move {
     pub column: usize,
     pub player_id: String,
 }
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct GameId {
+    pub game_id: String,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Empty {}
