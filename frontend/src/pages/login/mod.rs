@@ -110,11 +110,11 @@ fn get_handle_user(
             password: password.clone(),
             api_key: None,
         };
-        let serialized = serde_json::to_string(&user_info).unwrap();
+        let serialized_body = serde_json::to_string(&user_info).unwrap();
 
         let api_handler = api_handler.clone();
 
-        let action = move |key: Option<String>| match key {
+        let on_success = move |key: Option<String>| match key {
             Some(api_key) => {
                 set_local_storage(username.clone(), password.clone());
                 api_handler.set(ApiHandler {
@@ -127,6 +127,6 @@ fn get_handle_user(
             }
             None => (),
         };
-        ApiHandler::post(route.clone(), serialized, action);
+        ApiHandler::post(route.clone(), serialized_body, on_success, || ());
     })
 }

@@ -26,9 +26,9 @@ fn app() -> Html {
                     api_key: None,
                 };
 
-                let serialized = serde_json::to_string(&user_info).unwrap();
+                let body = serde_json::to_string(&user_info).unwrap();
                 let is_loading_clone2 = is_loading_clone.clone();
-                let action = move |key: Option<String>| {
+                let on_success = move |key: Option<String>| {
                     let user_info = UserInfo {
                         username: ah_clone.user_info.username.clone(),
                         password: ah_clone.user_info.password.clone(),
@@ -41,7 +41,11 @@ fn app() -> Html {
                 };
 
                 is_loading_clone.set(true);
-                ApiHandler::post("/login".to_string(), serialized, action);
+                let is_loading_clone2 = is_loading_clone.clone();
+                let on_failure = move || {
+                    is_loading_clone2.set(false);
+                };
+                ApiHandler::post("/login".to_string(), body, on_success, on_failure);
             }
             || ()
         },

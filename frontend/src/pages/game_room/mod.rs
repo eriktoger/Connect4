@@ -11,7 +11,7 @@ pub struct GameRoomProps {
 
 #[function_component(GameRoom)]
 pub fn game_room(props: &GameRoomProps) -> Html {
-    let ctx = use_context::<ApiHandler>().expect("Api handler context missing");
+    let api_handler = use_context::<ApiHandler>().expect("Api handler context missing");
 
     let game = use_state(|| Game {
         id: props.game_id.clone(),
@@ -33,15 +33,15 @@ pub fn game_room(props: &GameRoomProps) -> Html {
 
     let game_clone = game.clone();
     let game_id = props.game_id.clone();
-    let username = ctx.user_info.username.clone();
+    let username = api_handler.user_info.username.clone();
     use_effect_with_deps(
         move |_| {
             let game_clone = game_clone.clone();
-            let url = format!("{}{}", "/games/", game_id);
-            let action = move |new_game: Game| {
+            let route = format!("{}{}", "/games/", game_id);
+            let on_success = move |new_game: Game| {
                 game_clone.set(new_game);
             };
-            ctx.auth_get(url, action);
+            api_handler.auth_get(route, on_success, || ());
             || ()
         },
         (),

@@ -72,12 +72,12 @@ fn get_join_game(
         };
         let serialized = serde_json::to_string(&new_player).unwrap();
 
-        let action = move |_: Empty| {
+        let on_success = move |_: Empty| {
             history.push(Route::Room {
                 game_id: game.id.clone(),
             })
         };
-        api_handler.auth_post(route, serialized, action);
+        api_handler.auth_post(route, serialized, on_success, || ());
     })
 }
 
@@ -88,11 +88,12 @@ fn get_create_game(history: AnyHistory, api_handler: ApiHandler) -> yew::Callbac
 
         let route = "/games".to_string();
         let serialized = user_name.to_string();
-        let action = move |response: GameId| {
+        let on_success = move |response: GameId| {
             history.push(Route::Room {
                 game_id: response.game_id,
             })
         };
-        api_handler.auth_post(route, serialized, action);
+
+        api_handler.auth_post(route, serialized, on_success, || ());
     })
 }
