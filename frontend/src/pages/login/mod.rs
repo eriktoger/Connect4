@@ -51,7 +51,7 @@ pub fn login(props: &HomeProps) -> Html {
         }
 }
 
-fn create_cb(mut_ref: Rc<RefCell<String>>) -> Callback<Event> {
+fn create_onchange(mut_ref: Rc<RefCell<String>>) -> Callback<Event> {
     Callback::from(move |event: Event| {
         event.prevent_default();
         let text = event
@@ -76,11 +76,11 @@ fn form(props: &FormProps) -> Html {
         <form  class="form">
         <div class="pair">
             <label>{"User name"}</label>
-            <input onchange={create_cb(props.username_ref.clone())}type="text"  />
+            <input onchange={create_onchange(props.username_ref.clone())}type="text"  />
         </div>
         <div class="pair">
             <label for="lname">{"Password"}</label>
-            <input onchange={create_cb(props.password_ref.clone())} type="password" />
+            <input onchange={create_onchange(props.password_ref.clone())} type="password" />
         </div>
         <input onclick={props.on_submit.clone()} type="submit" value="Log in"/>
     </form>
@@ -110,7 +110,6 @@ fn get_handle_user(
             password: password.clone(),
             api_key: None,
         };
-        let serialized_body = serde_json::to_string(&user_info).unwrap();
 
         let api_handler = api_handler.clone();
 
@@ -127,6 +126,10 @@ fn get_handle_user(
             }
             None => (),
         };
-        ApiHandler::post(route.clone(), serialized_body, on_success, || ());
+
+        match serde_json::to_string(&user_info) {
+            Ok(body) => ApiHandler::post(route.clone(), body, on_success, || ()),
+            Err(_) => (),
+        }
     })
 }

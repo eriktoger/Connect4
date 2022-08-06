@@ -70,14 +70,17 @@ fn get_join_game(
             player: api_handler.user_info.username.to_string(),
             game: game.clone().id,
         };
-        let serialized = serde_json::to_string(&new_player).unwrap();
 
         let on_success = move |_: Empty| {
             history.push(Route::Room {
                 game_id: game.id.clone(),
             })
         };
-        api_handler.auth_post(route, serialized, on_success, || ());
+
+        match serde_json::to_string(&new_player) {
+            Ok(body) => api_handler.auth_post(route, body, on_success, || ()),
+            Err(_) => (),
+        }
     })
 }
 
