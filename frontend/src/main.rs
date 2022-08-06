@@ -26,26 +26,30 @@ fn app() -> Html {
                     api_key: None,
                 };
 
-                let body = serde_json::to_string(&user_info).unwrap();
-                let is_loading_clone2 = is_loading_clone.clone();
-                let on_success = move |key: Option<String>| {
-                    let user_info = UserInfo {
-                        username: ah_clone.user_info.username.clone(),
-                        password: ah_clone.user_info.password.clone(),
-                        api_key: key,
-                    };
-                    ah_clone.set(ApiHandler {
-                        user_info: user_info.clone(),
-                    });
-                    is_loading_clone2.set(false);
-                };
+                let body = serde_json::to_string(&user_info);
+                if !body.is_err() {
+                    let body = body.unwrap();
 
-                is_loading_clone.set(true);
-                let is_loading_clone2 = is_loading_clone.clone();
-                let on_failure = move || {
-                    is_loading_clone2.set(false);
-                };
-                ApiHandler::post("/login".to_string(), body, on_success, on_failure);
+                    let is_loading_clone2 = is_loading_clone.clone();
+                    let on_success = move |key: Option<String>| {
+                        let user_info = UserInfo {
+                            username: ah_clone.user_info.username.clone(),
+                            password: ah_clone.user_info.password.clone(),
+                            api_key: key,
+                        };
+                        ah_clone.set(ApiHandler {
+                            user_info: user_info.clone(),
+                        });
+                        is_loading_clone2.set(false);
+                    };
+
+                    is_loading_clone.set(true);
+                    let is_loading_clone2 = is_loading_clone.clone();
+                    let on_failure = move || {
+                        is_loading_clone2.set(false);
+                    };
+                    ApiHandler::post("/login".to_string(), body, on_success, on_failure);
+                }
             }
             || ()
         },
