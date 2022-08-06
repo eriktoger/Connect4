@@ -22,9 +22,8 @@ fn app() -> Html {
         move |_| {
             if *ah_clone.user_info.username != "".to_string() {
                 let user_info = UserInfo {
-                    username: ah_clone.user_info.username.clone(),
-                    password: ah_clone.user_info.password.clone(),
                     api_key: None,
+                    ..ah_clone.user_info.clone()
                 };
 
                 let body = serde_json::to_string(&user_info);
@@ -32,15 +31,12 @@ fn app() -> Html {
                     let body = body.unwrap();
 
                     let is_loading_clone2 = is_loading_clone.clone();
-                    let on_success = move |key: Option<String>| {
+                    let on_success = move |api_key: Option<String>| {
                         let user_info = UserInfo {
-                            username: ah_clone.user_info.username.clone(),
-                            password: ah_clone.user_info.password.clone(),
-                            api_key: key,
+                            api_key,
+                            ..ah_clone.user_info.clone()
                         };
-                        ah_clone.set(ApiHandler {
-                            user_info: user_info.clone(),
-                        });
+                        ah_clone.set(ApiHandler { user_info });
                         is_loading_clone2.set(false);
                     };
 

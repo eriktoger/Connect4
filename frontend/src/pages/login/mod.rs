@@ -118,9 +118,8 @@ fn get_handle_user(
                 set_local_storage(username.clone(), password.clone());
                 api_handler.set(ApiHandler {
                     user_info: UserInfo {
-                        username: username.clone(),
-                        password: password.clone(),
                         api_key: Some(api_key),
+                        ..(*api_handler).user_info.clone()
                     },
                 })
             }
