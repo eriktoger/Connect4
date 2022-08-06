@@ -103,16 +103,16 @@ fn get_handle_user(
 ) -> Callback<MouseEvent> {
     Callback::from(move |event: MouseEvent| {
         event.prevent_default();
+        let username = username.borrow().clone();
+        let password = password.borrow().clone();
         let user_info = UserInfo {
-            username: username.borrow().clone(),
-            password: password.borrow().clone(),
+            username: username.clone(),
+            password: password.clone(),
             api_key: None,
         };
         let serialized = serde_json::to_string(&user_info).unwrap();
 
         let api_handler = api_handler.clone();
-        let username = username.borrow().clone();
-        let password = password.borrow().clone();
 
         let action = move |key: Option<String>| match key {
             Some(api_key) => {

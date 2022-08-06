@@ -3,6 +3,7 @@ use common::UserInfo;
 use gloo_events::EventListener;
 use reqwasm::http::Request;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use std::error::Error;
 use wasm_bindgen::JsCast;
 use web_sys::{Event, EventSource, MessageEvent};
 
@@ -18,17 +19,10 @@ pub struct ApiHandler {
 
 impl ApiHandler {
     pub fn new() -> ApiHandler {
-        let local_storage = web_sys::window().unwrap().local_storage().unwrap().unwrap();
-
-        let username = local_storage
-            .get_item("username")
-            .unwrap()
-            .unwrap_or_default();
-
-        let password = local_storage
-            .get_item("password")
-            .unwrap()
-            .unwrap_or_default();
+        let (username, password) = match ApiHandler::check_local_storage() {
+            Ok((usernamne, password)) => (usernamne, password),
+            Err(_) => ("".to_string(), "".to_string()),
+        };
 
         ApiHandler {
             user_info: UserInfo {
@@ -144,5 +138,48 @@ impl ApiHandler {
             let deserialized: T = serde_json::from_str(&text).unwrap();
             action(deserialized);
         })
+    }
+
+    fn check_local_storage() -> Result<(String, String), Box<dyn Error>> {
+        let local_storage = web_sys::window().unwrap().local_storage().unwrap().unwrap();
+
+        let username_result = local_storage.get_item("username");
+        let username = match username_result {
+            Ok(val) => match val {
+                Some(val) => val,
+                None => {
+                    return Err(Box::new(std::io::Error::new(
+                        std::io::ErrorKind::NotFound,
+                        "Username not found",
+                    )))
+                }
+            },
+            Err(_) => {
+                return Err(Box::new(std::io::Error::new(
+                    std::io::ErrorKind::NotFound,
+                    "Username not found",
+                )))
+            }
+        };
+
+        let password_result = local_storage.get_item("password");
+        let password = match password_result {
+            Ok(val) => match val {
+                Some(val) => val,
+                None => {
+                    return Err(Box::new(std::io::Error::new(
+                        std::io::ErrorKind::NotFound,
+                        "Password not found",
+                    )))
+                }
+            },
+            Err(_) => {
+                return Err(Box::new(std::io::Error::new(
+                    std::io::ErrorKind::NotFound,
+                    "Password not found",
+                )))
+            }
+        };
+        Ok((username, password))
     }
 }
