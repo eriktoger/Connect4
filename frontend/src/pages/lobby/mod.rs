@@ -24,11 +24,11 @@ pub fn lobby() -> Html {
 
     use_effect_with_deps(
         move |_| {
-            let action = move |new_games: Vec<Game>| {
+            let on_success = move |new_games: Vec<Game>| {
                 games_clone.set(new_games);
             };
             let url = "/games/".to_string();
-            ApiHandler::get(url, action);
+            ApiHandler::get(url, on_success, || ());
             || ()
         },
         (),

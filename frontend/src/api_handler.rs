@@ -33,22 +33,21 @@ impl ApiHandler {
         }
     }
 
-    pub fn get<T: 'static, U: 'static>(route: String, action: U)
+    pub fn get<T: 'static, U: 'static, V: 'static>(route: String, on_success: U, on_failure: V)
     where
         T: DeserializeOwned,
         U: Fn(T) -> (),
+        V: Fn() -> (),
     {
         wasm_bindgen_futures::spawn_local(async move {
             let url = format!("{}{}", API_ROUTE, route);
-
-            let response = Request::get(&url)
-                .send()
-                .await
-                .unwrap()
-                .json()
-                .await
-                .unwrap();
-            action(response);
+            match Request::get(&url).send().await {
+                Ok(response) => match response.json().await {
+                    Ok(val) => on_success(val),
+                    Err(_) => on_failure(),
+                },
+                Err(_) => on_failure(),
+            }
         });
     }
 
