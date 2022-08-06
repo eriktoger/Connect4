@@ -11,7 +11,7 @@ pub async fn game_events(
     main_state: &State<MainState>,
     game_id: String,
 ) -> EventStream![] {
-    let game = main_state.db.get_one_game(game_id).await.unwrap();
+    let game = main_state.db.get_one_game(game_id).await.unwrap().unwrap();
     let current_room = main_state.game_channels.get(&game.channel).unwrap();
     let mut rx = current_room.subscribe();
     EventStream! {

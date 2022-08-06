@@ -66,6 +66,11 @@ fn service_unavailable() -> String {
     "Something went wrong".to_string()
 }
 
+#[catch(404)]
+fn not_found() -> String {
+    "Not found".to_string()
+}
+
 #[launch]
 async fn rocket() -> _ {
     let mut game_channels = HashMap::new();
@@ -92,7 +97,7 @@ async fn rocket() -> _ {
     rocket::custom(config)
         .attach(CORS)
         .manage(main_state)
-        .register("/", catchers![service_unavailable])
+        .register("/", catchers![service_unavailable, not_found])
         .mount(
             "/",
             routes![

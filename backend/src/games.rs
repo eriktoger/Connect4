@@ -20,9 +20,18 @@ pub async fn get_games(main_state: &State<MainState>) -> Result<String, Status> 
 }
 
 #[get("/games/<game_id>")]
-pub async fn get_one_game(main_state: &State<MainState>, game_id: String) -> String {
-    let k: Game = main_state.db.get_one_game(game_id).await.unwrap();
-    serde_json::to_string(&k).unwrap()
+pub async fn get_one_game(
+    main_state: &State<MainState>,
+    game_id: String,
+) -> Result<String, Status> {
+    let game_result = main_state.db.get_one_game(game_id).await;
+    match game_result {
+        Ok(game_option) => match game_option {
+            Some(game) => Ok(serde_json::to_string(&game).unwrap()),
+            None => Err(Status::NotFound),
+        },
+        Err(_) => Err(Status::ServiceUnavailable),
+    }
 }
 
 #[post("/games", data = "<player_1>")]
@@ -68,36 +77,68 @@ pub async fn join_game(
     main_state: &State<MainState>,
     data: String,
     _user_auth: UserAuth,
-) -> String {
+) -> Result<String, Status> {
     let deserialized: NewPlayer = serde_json::from_str(&data).unwrap();
-    let game = main_state
-        .db
-        .get_one_game(deserialized.game.clone())
-        .await
-        .unwrap();
-    if game.status != "not_started" {
-        return serde_json::to_string(&Empty {}).unwrap();
+    let game_result = main_state.db.get_one_game(deserialized.game.clone()).await;
+    if game_result.is_err() {
+        return Err(Status::ServiceUnavailable);
     }
+    let game_option = game_result.unwrap();
+
+    if game_option.is_none() {
+        return Err(Status::NotFound);
+    }
+
+    let game = game_option.unwrap();
+
+    if game.status != "not_started" {
+        return Ok(serde_json::to_string(&Empty {}).unwrap());
+    }
+
     main_state
         .db
         .join_game(deserialized.game, deserialized.player)
         .await;
 
-    let game = main_state.db.get_one_game(game.id).await.unwrap();
+    let game_result = main_state.db.get_one_game(game.id).await;
 
-    let sender = main_state.game_channels.get(&game.channel).unwrap();
-    let _ = sender.send(game);
-    serde_json::to_string(&Empty {}).unwrap()
+    if game_result.is_err() {
+        return Err(Status::ServiceUnavailable);
+    }
+    let game_option = game_result.unwrap();
+
+    if game_option.is_none() {
+        return Err(Status::NotFound);
+    }
+
+    let game = game_option.unwrap();
+
+    let sender = main_state.game_channels.get(&game.channel);
+    match sender {
+        Some(sender) => {
+            let _ = sender.send(game);
+        }
+        None => (),
+    };
+
+    Ok(serde_json::to_string(&Empty {}).unwrap())
 }
 
 #[post("/games/move", data = "<data>")]
-pub async fn play_move(main_state: &State<MainState>, data: &str) -> String {
+pub async fn play_move(main_state: &State<MainState>, data: &str) -> Result<String, Status> {
     let deserialized: Move = serde_json::from_str(&data).unwrap();
-    let mut game = main_state
-        .db
-        .get_one_game(deserialized.game_id)
-        .await
-        .unwrap();
+    let game_result = main_state.db.get_one_game(deserialized.game_id).await;
+
+    if game_result.is_err() {
+        return Err(Status::ServiceUnavailable);
+    }
+    let game_option = game_result.unwrap();
+
+    if game_option.is_none() {
+        return Err(Status::NotFound);
+    }
+
+    let mut game = game_option.unwrap();
 
     let not_your_turn = deserialized.player_id != game.turn;
     let not_active = game.status != "active";
@@ -106,7 +147,7 @@ pub async fn play_move(main_state: &State<MainState>, data: &str) -> String {
 
     let empty_return = serde_json::to_string(&Empty {}).unwrap();
     if invalid_move {
-        return empty_return;
+        return Ok(empty_return);
     }
 
     for row_index in (0..6).rev() {
@@ -138,11 +179,17 @@ pub async fn play_move(main_state: &State<MainState>, data: &str) -> String {
         game.turn = game.player_1.clone();
     }
 
-    let current_channel = game.channel.clone();
     main_state.db.update_one_game(game.clone()).await;
-    let sender = main_state.game_channels.get(&current_channel).unwrap();
-    let _ = sender.send(game);
-    empty_return
+
+    let sender = main_state.game_channels.get(&game.channel);
+    match sender {
+        Some(sender) => {
+            let _ = sender.send(game);
+        }
+        None => (),
+    };
+
+    Ok(empty_return)
 }
 
 fn player_won(

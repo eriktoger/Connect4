@@ -3,6 +3,7 @@ extern crate dotenv;
 use crate::game_model::Channel;
 use common::{Game, UserInfo};
 use dotenv::dotenv;
+use mongodb::error::Error;
 use mongodb::{bson::doc, results::InsertOneResult, Client, Collection};
 use rocket::futures::StreamExt;
 use uuid::Uuid;
@@ -121,15 +122,14 @@ impl MongoRepo {
             .expect("Error creating user")
     }
 
-    pub async fn get_one_game(&self, id: String) -> Option<Game> {
+    pub async fn get_one_game(&self, id: String) -> Result<Option<Game>, Error> {
         let filter = doc! {"id": id};
-        let game = self
-            .game_col
-            .find_one(filter, None)
-            .await
-            .ok()
-            .expect("Error getting game");
-        game
+        let result = self.game_col.find_one(filter, None).await;
+
+        match result {
+            Ok(game) => Ok(game),
+            Err(err) => Err(err),
+        }
     }
 
     pub async fn get_all_games(&self) -> Option<Vec<Game>> {
