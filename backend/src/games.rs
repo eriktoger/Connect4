@@ -1,5 +1,6 @@
 use crate::structs::{MainState, UserAuth};
 use common::{Empty, Game, GameId, Move, NewPlayer};
+use rocket::http::Status;
 use rocket::State;
 use std::{
     sync::{
@@ -11,9 +12,11 @@ use std::{
 use uuid::Uuid;
 
 #[get("/games")]
-pub async fn get_games(main_state: &State<MainState>) -> String {
-    let k: Vec<Game> = main_state.db.get_all_games().await;
-    serde_json::to_string(&k).unwrap()
+pub async fn get_games(main_state: &State<MainState>) -> Result<String, Status> {
+    match main_state.db.get_all_games().await {
+        Some(games) => Ok(serde_json::to_string(&games).unwrap()),
+        None => Err(Status::ServiceUnavailable),
+    }
 }
 
 #[get("/games/<game_id>")]
@@ -50,7 +53,7 @@ pub async fn create_game(
     };
     let _ = main_state.db.create_game(new_game).await;
     let games = main_state.db.get_all_games().await;
-    let _res = main_state.lobby_channel.send(games);
+    let _res = main_state.lobby_channel.send(games.unwrap());
     serde_json::to_string(&GameId { game_id: id }).unwrap()
 }
 

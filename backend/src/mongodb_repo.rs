@@ -132,18 +132,19 @@ impl MongoRepo {
         game
     }
 
-    pub async fn get_all_games(&self) -> Vec<Game> {
-        let mut game_cursor = self
-            .game_col
-            .find(None, None)
-            .await
-            .ok()
-            .expect("Error getting all games");
-        let mut result: Vec<Game> = Vec::new();
-        while let Some(doc) = game_cursor.next().await {
-            result.push(doc.unwrap());
+    pub async fn get_all_games(&self) -> Option<Vec<Game>> {
+        let games = self.game_col.find(None, None).await;
+
+        match games {
+            Ok(mut cursor) => {
+                let mut result: Vec<Game> = Vec::new();
+                while let Some(doc) = cursor.next().await {
+                    result.push(doc.unwrap());
+                }
+                Some(result)
+            }
+            Err(_) => None,
         }
-        result
     }
 
     pub async fn join_game(&self, id: String, player_2: String) {

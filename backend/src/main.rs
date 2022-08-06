@@ -61,6 +61,11 @@ async fn create_user(main_state: &State<MainState>, data: &str) -> String {
 #[options("/<_..>")]
 pub fn all_options() {}
 
+#[catch(503)]
+fn service_unavailable() -> String {
+    "Something went wrong".to_string()
+}
+
 #[launch]
 async fn rocket() -> _ {
     let mut game_channels = HashMap::new();
@@ -87,6 +92,7 @@ async fn rocket() -> _ {
     rocket::custom(config)
         .attach(CORS)
         .manage(main_state)
+        .register("/", catchers![service_unavailable])
         .mount(
             "/",
             routes![
@@ -100,7 +106,7 @@ async fn rocket() -> _ {
                 get_one_game,
                 login,
                 create_user,
-                all_options
+                all_options,
             ],
         )
 }

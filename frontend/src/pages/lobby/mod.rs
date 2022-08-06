@@ -27,7 +27,7 @@ pub fn lobby() -> Html {
             let on_success = move |new_games: Vec<Game>| {
                 games_clone.set(new_games);
             };
-            let url = "/games/".to_string();
+            let url = "/games".to_string();
             ApiHandler::get(url, on_success, || ());
             || ()
         },

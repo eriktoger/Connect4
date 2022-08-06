@@ -32,8 +32,6 @@ pub async fn game_events(
 
 #[get("/lobby-events")]
 pub async fn lobby_events(mut end: Shutdown, main_state: &State<MainState>) -> EventStream![] {
-    //lobby events should trigger when a new game is:
-    // created, a player joins/leaves game, or game has ended
     let mut rx = main_state.lobby_channel.subscribe();
     EventStream! {
         loop {
