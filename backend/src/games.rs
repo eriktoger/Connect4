@@ -88,7 +88,7 @@ pub async fn join_game(
 }
 
 #[post("/games/move", data = "<data>")]
-pub async fn play_move(main_state: &State<MainState>, data: &str) {
+pub async fn play_move(main_state: &State<MainState>, data: &str) -> String {
     let deserialized: Move = serde_json::from_str(&data).unwrap();
     let mut game = main_state
         .db
@@ -101,8 +101,9 @@ pub async fn play_move(main_state: &State<MainState>, data: &str) {
     let column_full = game.grid[0][deserialized.column] != "".to_string();
     let invalid_move = not_your_turn || not_active || column_full;
 
+    let empty_return = serde_json::to_string(&Empty {}).unwrap();
     if invalid_move {
-        return;
+        return empty_return;
     }
 
     for row_index in (0..6).rev() {
@@ -138,6 +139,7 @@ pub async fn play_move(main_state: &State<MainState>, data: &str) {
     main_state.db.update_one_game(game.clone()).await;
     let sender = main_state.game_channels.get(&current_channel).unwrap();
     let _ = sender.send(game);
+    empty_return
 }
 
 fn player_won(
@@ -164,9 +166,7 @@ fn player_won(
             }
         });
     }
-    let w = win.load(Ordering::Relaxed);
-    println!("hej {}", w);
-    w
+    win.load(Ordering::Relaxed)
 }
 
 fn horizontal_win(
@@ -178,7 +178,7 @@ fn horizontal_win(
     let mut check_left = true;
     let mut check_right = true;
     let mut in_a_row = 1;
-    println!("horizontal");
+
     for i in 1..4 {
         let in_bound = col_index >= i;
         if check_left && in_bound && grid[row_index][col_index - i] == *player_id {

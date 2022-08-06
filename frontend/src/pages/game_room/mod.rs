@@ -1,8 +1,8 @@
 mod board;
-use crate::api_handler::ApiHandler;
+use crate::{api_handler::ApiHandler, hooks::use_api_handler};
 use board::Board;
 use common::Game;
-use yew::{function_component, html, use_context, use_effect_with_deps, use_state, Properties};
+use yew::{function_component, html, use_effect_with_deps, use_state, Properties};
 
 #[derive(Properties, PartialEq)]
 pub struct GameRoomProps {
@@ -11,7 +11,7 @@ pub struct GameRoomProps {
 
 #[function_component(GameRoom)]
 pub fn game_room(props: &GameRoomProps) -> Html {
-    let api_handler = use_context::<ApiHandler>().expect("Api handler context missing");
+    let api_handler = use_api_handler();
 
     let game = use_state(|| Game {
         id: props.game_id.clone(),

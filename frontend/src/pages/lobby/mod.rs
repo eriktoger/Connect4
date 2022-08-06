@@ -1,15 +1,15 @@
-use crate::{api_handler::ApiHandler, routes::Route};
+use crate::{api_handler::ApiHandler, hooks::use_api_handler, routes::Route};
 use common::{Empty, Game, GameId, NewPlayer};
 use stylist::Style;
 use web_sys::MouseEvent;
-use yew::{function_component, html, use_context, use_effect_with_deps, use_state, Callback};
+use yew::{function_component, html, use_effect_with_deps, use_state, Callback};
 use yew_router::{history::AnyHistory, history::History, hooks::use_history};
 
 #[function_component(Lobby)]
 pub fn lobby() -> Html {
     let style_sheet = Style::new(include_str!("style.css")).expect("Css failed to load");
     let games = use_state(|| vec![]);
-    let api_handler = use_context::<ApiHandler>().expect("Api handler context missing");
+    let api_handler = use_api_handler();
     let games_clone = games.clone();
 
     use_state(|| {

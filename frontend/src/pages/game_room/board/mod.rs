@@ -1,10 +1,8 @@
-use common::Game;
-use reqwasm::http::Request;
+use crate::hooks::use_api_handler;
+use common::{Empty, Game};
 use serde::{Deserialize, Serialize};
 use stylist::Style;
 use yew::{function_component, html, Callback, Properties};
-
-use crate::constants::API_ROUTE;
 
 #[derive(Properties, PartialEq)]
 pub struct BoardProps {
@@ -57,20 +55,23 @@ struct DropTokenProps {
 
 #[function_component(DropToken)]
 fn dropToken(props: &DropTokenProps) -> Html {
+    let api_handler = use_api_handler();
     let id = props.game_id.clone();
     let player_id = props.player_id.clone();
     let column = props.column.clone();
+
     let drop_token = Callback::from(move |_| {
         let new_move = Move {
             column,
             game_id: id.clone(),
             player_id: player_id.clone(),
         };
-        let serialized = serde_json::to_string(&new_move).unwrap();
-        wasm_bindgen_futures::spawn_local(async move {
-            let url = format!("{}{}", API_ROUTE, "/games/move");
-            Request::post(&url).body(&serialized).send().await.unwrap();
-        });
+
+        let route = "/games/move".to_string();
+        match serde_json::to_string(&new_move) {
+            Ok(body) => api_handler.auth_post(route, body, |_: Empty| (), || ()),
+            Err(_) => (),
+        }
     });
     html! {<div class="drop" onclick={drop_token.clone()}>{props.column}</div>}
 }
