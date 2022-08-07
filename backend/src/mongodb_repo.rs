@@ -1,17 +1,26 @@
 use std::env;
 extern crate dotenv;
-use crate::game_model::Channel;
 use common::{Game, UserInfo};
 use dotenv::dotenv;
+use mongodb::bson::oid::ObjectId;
 use mongodb::error::Error;
 use mongodb::{bson::doc, results::InsertOneResult, Client, Collection};
 use rocket::futures::StreamExt;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 pub struct MongoRepo {
     game_col: Collection<Game>,
     channel_col: Collection<Channel>,
     user_col: Collection<UserInfo>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Channel {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub _id: Option<ObjectId>,
+    pub id: String,
+    pub taken: bool,
 }
 
 //init

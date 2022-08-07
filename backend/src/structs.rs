@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::mongodb_repo::MongoRepo;
 use common::Game;
 use rocket::http::Status;
@@ -7,6 +5,7 @@ use rocket::request::{FromRequest, Outcome};
 use rocket::tokio::sync::broadcast::Sender;
 use rocket::Request;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 pub struct MainState {
     pub game_channels: HashMap<String, Sender<Game>>,

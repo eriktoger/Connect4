@@ -1,6 +1,4 @@
 mod events;
-mod game_model;
-mod game_room;
 mod games;
 mod mongodb_repo;
 mod structs;
