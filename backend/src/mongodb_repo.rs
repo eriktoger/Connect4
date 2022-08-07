@@ -124,15 +124,17 @@ impl MongoRepo {
         }
     }
 
-    pub async fn user_is_auth(&self, username: String, api_key: String) -> bool {
+    pub async fn user_is_auth(&self, username: String, api_key: String) -> Result<bool, Error> {
         let filter = doc! {"username": username, "api_key":api_key};
-        let user: Option<UserInfo> = self
-            .user_col
-            .find_one(filter.clone(), None)
-            .await
-            .ok()
-            .unwrap();
-        user.is_some()
+        let result = self.user_col.find_one(filter.clone(), None).await;
+
+        match result {
+            Ok(option) => match option {
+                Some(_) => Ok(true),
+                None => Ok(false),
+            },
+            Err(e) => Err(e),
+        }
     }
 }
 

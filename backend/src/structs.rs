@@ -23,6 +23,7 @@ pub struct UserAuth {
 pub enum UserAuthError {
     Missing,
     Invalid,
+    InternalError,
 }
 
 #[rocket::async_trait]
@@ -36,13 +37,19 @@ impl<'r> FromRequest<'r> for UserAuth {
             None => Outcome::Failure((Status::BadRequest, UserAuthError::Missing)),
             Some(key) => {
                 let deserialized: UserAuth = serde_json::from_str(&key).unwrap();
-                let is_authed = main_state
+                let result = main_state
                     .db
                     .user_is_auth(deserialized.username.clone(), deserialized.api_key.clone())
                     .await;
-                match is_authed {
-                    true => Outcome::Success(deserialized),
-                    false => Outcome::Failure((Status::BadRequest, UserAuthError::Invalid)),
+
+                match result {
+                    Ok(is_auth) => match is_auth {
+                        true => Outcome::Success(deserialized),
+                        false => Outcome::Failure((Status::Unauthorized, UserAuthError::Invalid)),
+                    },
+                    Err(_) => {
+                        Outcome::Failure((Status::ServiceUnavailable, UserAuthError::InternalError))
+                    }
                 }
             }
         }
