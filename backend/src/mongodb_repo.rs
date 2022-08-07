@@ -97,15 +97,31 @@ impl MongoRepo {
         }
     }
 
-    pub async fn create_user(&self, user: UserInfo) -> Option<String> {
+    pub async fn create_user(&self, user: UserInfo) -> Result<Option<String>, Error> {
+        let filter = doc! {"username": user.username.clone()};
+        let old_user = self.user_col.find_one(filter, None).await;
+
+        if old_user.is_err() {
+            return Err(old_user.err().unwrap());
+        }
+
+        let old_user = old_user.unwrap();
+
+        if old_user.is_some() {
+            return Ok(None);
+        }
+
         let api_key = Some(Uuid::new_v4().to_string());
         let new_user = UserInfo {
             username: user.username,
             password: user.password,
             api_key: api_key.clone(),
         };
-        let _ = self.user_col.insert_one(new_user.clone(), None).await.ok();
-        api_key
+        let result = self.user_col.insert_one(new_user.clone(), None).await;
+        match result {
+            Ok(_) => Ok(api_key),
+            Err(e) => Err(e),
+        }
     }
 
     pub async fn user_is_auth(&self, username: String, api_key: String) -> bool {

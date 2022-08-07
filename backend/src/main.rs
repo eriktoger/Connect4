@@ -57,10 +57,16 @@ async fn login(main_state: &State<MainState>, data: &str) -> Result<String, Stat
 }
 
 #[post("/signup", data = "<data>")]
-async fn create_user(main_state: &State<MainState>, data: &str) -> String {
+async fn create_user(main_state: &State<MainState>, data: &str) -> Result<String, Status> {
     let deserialized: UserInfo = serde_json::from_str(&data).unwrap();
-    let response = main_state.db.create_user(deserialized).await;
-    serde_json::to_string(&response).unwrap()
+    let result = main_state.db.create_user(deserialized).await;
+    match result {
+        Ok(option) => match option {
+            Some(user) => Ok(serde_json::to_string(&user).unwrap()),
+            None => Err(Status::Conflict),
+        },
+        Err(_) => Err(Status::ServiceUnavailable),
+    }
 }
 
 #[options("/<_..>")]
