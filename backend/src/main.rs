@@ -10,7 +10,7 @@ extern crate rocket;
 
 use mongodb_repo::MongoRepo;
 use rocket::fairing::{Fairing, Info, Kind};
-use rocket::http::Header;
+use rocket::http::{Header, Status};
 use rocket::tokio::sync::broadcast::channel;
 use rocket::Config;
 use rocket::State;
@@ -43,10 +43,17 @@ impl Fairing for CORS {
 }
 
 #[post("/login", data = "<data>")]
-async fn login(main_state: &State<MainState>, data: &str) -> String {
+async fn login(main_state: &State<MainState>, data: &str) -> Result<String, Status> {
     let deserialized: UserInfo = serde_json::from_str(&data).unwrap();
     let response = main_state.db.auth_user(deserialized).await;
-    serde_json::to_string(&response).unwrap()
+
+    match response {
+        Ok(option) => match option {
+            Some(user) => Ok(serde_json::to_string(&user).unwrap()),
+            None => Err(Status::Unauthorized),
+        },
+        Err(_) => Err(Status::ServiceUnavailable),
+    }
 }
 
 #[post("/signup", data = "<data>")]
@@ -62,6 +69,11 @@ pub fn all_options() {}
 #[catch(503)]
 fn service_unavailable() -> String {
     "Something went wrong".to_string()
+}
+
+#[catch(401)]
+fn not_authorized() -> String {
+    "Not authorized".to_string()
 }
 
 #[catch(404)]
@@ -95,7 +107,10 @@ async fn rocket() -> _ {
     rocket::custom(config)
         .attach(CORS)
         .manage(main_state)
-        .register("/", catchers![service_unavailable, not_found])
+        .register(
+            "/",
+            catchers![service_unavailable, not_found, not_authorized],
+        )
         .mount(
             "/",
             routes![

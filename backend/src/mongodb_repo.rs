@@ -79,23 +79,21 @@ impl MongoRepo {
         let _ = self.channel_col.insert_many(docs, None).await;
     }
 
-    pub async fn auth_user(&self, user: UserInfo) -> Option<String> {
+    pub async fn auth_user(&self, user: UserInfo) -> Result<Option<String>, Error> {
         let filter = doc! {"username": user.username, "password":user.password};
-        let user: Option<UserInfo> = self
-            .user_col
-            .find_one(filter.clone(), None)
-            .await
-            .ok()
-            .unwrap();
+        let result = self.user_col.find_one(filter.clone(), None).await;
 
-        match user {
-            Some(_) => {
-                let api_key = Uuid::new_v4().to_string();
-                let update = doc! { "$set": {"api_key": api_key.clone()}};
-                let _ = self.user_col.update_one(filter, update, None).await;
-                Some(api_key)
-            }
-            None => None,
+        match result {
+            Ok(option) => match option {
+                Some(_) => {
+                    let api_key = Uuid::new_v4().to_string();
+                    let update = doc! { "$set": {"api_key": api_key.clone()}};
+                    let _ = self.user_col.update_one(filter, update, None).await;
+                    Ok(Some(api_key))
+                }
+                None => Ok(None),
+            },
+            Err(e) => Err(e),
         }
     }
 
