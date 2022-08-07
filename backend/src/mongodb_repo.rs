@@ -27,21 +27,47 @@ pub struct Channel {
 impl MongoRepo {
     pub async fn init() -> Self {
         dotenv().ok();
-        let uri = match env::var("MONGO_URI") {
-            Ok(v) => v.to_string(),
-            Err(_) => format!("Error loading env variable"),
-        };
+        let uri = env::var("MONGO_URI").unwrap_or_default();
         let client = Client::with_uri_str(uri).await.unwrap();
         let db = client.database("Connect4");
         let game_col = db.collection("games");
         let channel_col = db.collection("channels");
         let user_col: Collection<UserInfo> = db.collection("users");
 
-        //maybe should be its own function called reset or something.
-        let _ = channel_col.delete_many(doc! {}, None).await;
-        let _ = game_col.delete_many(doc! {}, None).await;
-        let _ = user_col.delete_many(doc! {}, None).await;
+        let db = MongoRepo {
+            game_col,
+            channel_col,
+            user_col,
+        };
 
+        db.reset_data_base().await;
+        db.add_admins().await;
+        db.add_channels().await;
+        db
+    }
+
+    async fn reset_data_base(&self) {
+        let _ = self.channel_col.delete_many(doc! {}, None).await;
+        let _ = self.game_col.delete_many(doc! {}, None).await;
+        let _ = self.user_col.delete_many(doc! {}, None).await;
+    }
+
+    async fn add_admins(&self) {
+        let admins = [("admin"), ("admin2")];
+
+        for admin in admins {
+            let username = admin.to_string();
+            let password = admin.to_string();
+            let api_key = Some(admin.to_string());
+            let admin = UserInfo {
+                username,
+                password,
+                api_key,
+            };
+            let _ = self.user_col.insert_one(admin, None).await;
+        }
+    }
+    async fn add_channels(&self) {
         let mut docs = vec![];
         for _ in 0..3 {
             docs.push(Channel {
@@ -50,33 +76,7 @@ impl MongoRepo {
                 taken: false,
             });
         }
-        let _ = channel_col.insert_many(docs, None).await;
-
-        let username = "admin".to_string();
-        let password = "admin".to_string();
-        let api_key = Some("admin".to_string());
-        let admin = UserInfo {
-            username,
-            password,
-            api_key,
-        };
-        let _ = user_col.insert_one(admin, None).await;
-
-        let username = "admin2".to_string();
-        let password = "admin2".to_string();
-        let api_key = Some("admin2".to_string());
-        let admin = UserInfo {
-            username,
-            password,
-            api_key,
-        };
-        let _ = user_col.insert_one(admin, None).await;
-
-        MongoRepo {
-            game_col,
-            channel_col,
-            user_col,
-        }
+        let _ = self.channel_col.insert_many(docs, None).await;
     }
 
     pub async fn auth_user(&self, user: UserInfo) -> Option<String> {
