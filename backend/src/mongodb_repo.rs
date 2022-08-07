@@ -189,13 +189,9 @@ impl MongoRepo {
         result
     }
 
-    pub async fn get_available_channel(&self) -> Option<Channel> {
+    pub async fn get_available_channel(&self) -> Result<Option<Channel>, Error> {
         let filter = doc! {"taken": false};
-        self.channel_col
-            .find_one(filter, None)
-            .await
-            .ok()
-            .expect("Error finding channel")
+        self.channel_col.find_one(filter, None).await
     }
 
     pub async fn update_one_channel(&self, id: String, taken: bool) {

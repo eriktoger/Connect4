@@ -39,17 +39,23 @@ pub async fn create_game(
     main_state: &State<MainState>,
     player_1: String,
     _user_auth: UserAuth,
-) -> String {
-    let avaiable_channel = main_state.db.get_available_channel().await;
-    if avaiable_channel.is_none() {
-        return serde_json::to_string(&GameId {
-            game_id: "".to_string(),
-        })
-        .unwrap();
+) -> Result<String, Status> {
+    let result = main_state.db.get_available_channel().await;
+    if result.is_err() {
+        return Err(Status::ServiceUnavailable);
     }
 
-    let ac = avaiable_channel.unwrap();
-    main_state.db.update_one_channel(ac.id.clone(), true).await;
+    let option = result.unwrap();
+    if option.is_none() {
+        return Err(Status::Conflict);
+    }
+
+    let channel = option.unwrap();
+
+    main_state
+        .db
+        .update_one_channel(channel.id.clone(), true)
+        .await;
     let id = Uuid::new_v4().to_string();
     let new_game = Game {
         id: id.clone(),
@@ -57,13 +63,13 @@ pub async fn create_game(
         player_2: Default::default(),
         grid: Default::default(),
         turn: player_1,
-        channel: ac.id,
+        channel: channel.id,
         status: "not_started".to_string(),
     };
     let _ = main_state.db.create_game(new_game).await;
     let games = main_state.db.get_all_games().await;
     let _res = main_state.lobby_channel.send(games.unwrap());
-    serde_json::to_string(&GameId { game_id: id }).unwrap()
+    Ok(serde_json::to_string(&GameId { game_id: id }).unwrap())
 }
 
 #[put("/games", data = "<data>")]

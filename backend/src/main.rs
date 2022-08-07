@@ -81,6 +81,11 @@ fn not_found() -> String {
     "Not found".to_string()
 }
 
+#[catch(409)]
+fn conflict() -> String {
+    "There was a conflict".to_string()
+}
+
 #[launch]
 async fn rocket() -> _ {
     let mut game_channels = HashMap::new();
@@ -109,7 +114,7 @@ async fn rocket() -> _ {
         .manage(main_state)
         .register(
             "/",
-            catchers![service_unavailable, not_found, not_authorized],
+            catchers![service_unavailable, not_found, not_authorized, conflict],
         )
         .mount(
             "/",
