@@ -106,10 +106,14 @@ pub async fn join_game(
         return Ok(serde_json::to_string(&Empty {}).unwrap());
     }
 
-    main_state
+    let result = main_state
         .db
         .join_game(deserialized.game, deserialized.player)
         .await;
+
+    if result.is_err() {
+        return Err(Status::ServiceUnavailable);
+    }
 
     let game_result = main_state.db.get_one_game(game.id).await;
 

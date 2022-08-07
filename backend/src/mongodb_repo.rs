@@ -4,6 +4,7 @@ use common::{Game, UserInfo};
 use dotenv::dotenv;
 use mongodb::bson::oid::ObjectId;
 use mongodb::error::Error;
+use mongodb::results::UpdateResult;
 use mongodb::{bson::doc, results::InsertOneResult, Client, Collection};
 use rocket::futures::StreamExt;
 use serde::{Deserialize, Serialize};
@@ -164,13 +165,10 @@ impl MongoRepo {
         }
     }
 
-    pub async fn join_game(&self, id: String, player_2: String) {
+    pub async fn join_game(&self, id: String, player_2: String) -> Result<UpdateResult, Error> {
         let query = doc! {"id": id.clone()};
         let update = doc! { "$set": {"player_2": player_2.clone(),"status":"active"}};
-        self.game_col
-            .update_one(query, update, None)
-            .await
-            .expect("Error joining game");
+        self.game_col.update_one(query, update, None).await
     }
 
     pub async fn update_one_game(&self, replacement: Game) {
@@ -185,18 +183,19 @@ impl MongoRepo {
 
 //Channels
 impl MongoRepo {
-    pub async fn get_all_channels(&self) -> Vec<Channel> {
-        let mut cursor = self
-            .channel_col
-            .find(None, None)
-            .await
-            .ok()
-            .expect("Error getting channels");
-        let mut result: Vec<Channel> = Vec::new();
-        while let Some(doc) = cursor.next().await {
-            result.push(doc.unwrap());
+    pub async fn get_all_channels(&self) -> Result<Vec<Channel>, Error> {
+        let result = self.channel_col.find(None, None).await;
+
+        if result.is_err() {
+            return Err(result.err().unwrap());
         }
-        result
+        let mut cursor = result.unwrap();
+
+        let mut channels: Vec<Channel> = Vec::new();
+        while let Some(doc) = cursor.next().await {
+            channels.push(doc.unwrap());
+        }
+        Ok(channels)
     }
 
     pub async fn get_available_channel(&self) -> Result<Option<Channel>, Error> {

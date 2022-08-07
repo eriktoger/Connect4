@@ -97,7 +97,7 @@ async fn rocket() -> _ {
     let mut game_channels = HashMap::new();
     let db = MongoRepo::init().await;
 
-    let channels = db.get_all_channels().await;
+    let channels = db.get_all_channels().await.unwrap();
     for chan in channels {
         game_channels.insert(chan.id, channel::<Game>(1024).0);
     }
