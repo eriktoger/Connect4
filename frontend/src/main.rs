@@ -58,6 +58,7 @@ fn app() -> Html {
     }
 
     html! {
+        <>
             <ContextProvider<ApiHandler> context={(*api_handler).clone()}>
             {
                 if (*api_handler).user_info.api_key == None {
@@ -71,6 +72,7 @@ fn app() -> Html {
                 }
               }
             </ContextProvider<ApiHandler>>
+        </>
 
     }
 }

@@ -24,28 +24,35 @@ pub fn login(props: &HomeProps) -> Html {
 
     html! {
     <div class={{style_sheet}}>
-        <div class="login">
-            <h1>{"Already a member?"}</h1>
-            <Form
-                username_ref={login_username.clone()}
-                password_ref={login_password.clone()}
-                on_submit={get_handle_user(
-                    "/login".to_string(),login_username.clone(),
-                    login_password.clone(),props.api_handler.clone())
-                } />
+        <div class="container">
+            <div class="login">
+                <h1>{"Log in"}</h1>
+                <Form
+                    username_ref={login_username.clone()}
+                    password_ref={login_password.clone()}
+                    on_submit={get_handle_user(
+                        "/login".to_string(),login_username.clone(),
+                        login_password.clone(),props.api_handler.clone())
 
-        </div>
-        <div class="signup">
-            <h2> {"Need an account?"}</h2>
-            <Form
-                username_ref={signup_username.clone()}
-                password_ref={signup_password.clone()}
-                on_submit={get_handle_user(
-                    "/signup".to_string(),signup_username.clone(),
-                    signup_password.clone(),props.api_handler.clone())
+                    }
+                    button_text={"Log in"}
+                    />
 
-                } />
+            </div>
+            <div class="signup">
+                <h2> {"Sign up"}</h2>
+                <Form
+                    username_ref={signup_username.clone()}
+                    password_ref={signup_password.clone()}
+                    on_submit={get_handle_user(
+                        "/signup".to_string(),signup_username.clone(),
+                        signup_password.clone(),props.api_handler.clone())
 
+                    }
+                    button_text={"Sign up"}
+                    />
+
+            </div>
         </div>
     </div>
         }
@@ -68,6 +75,7 @@ struct FormProps {
     username_ref: rc::Rc<RefCell<String>>,
     password_ref: rc::Rc<RefCell<String>>,
     on_submit: Callback<MouseEvent>,
+    button_text: String,
 }
 
 #[function_component(Form)]
@@ -82,7 +90,7 @@ fn form(props: &FormProps) -> Html {
             <label for="lname">{"Password"}</label>
             <input onchange={create_onchange(props.password_ref.clone())} type="password" />
         </div>
-        <input onclick={props.on_submit.clone()} type="submit" value="Log in"/>
+        <input onclick={props.on_submit.clone()} type="submit" value={props.button_text.clone()}/>
     </form>
 
 
