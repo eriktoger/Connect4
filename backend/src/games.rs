@@ -14,8 +14,8 @@ use uuid::Uuid;
 #[get("/games")]
 pub async fn get_games(main_state: &State<MainState>) -> Result<String, Status> {
     match main_state.db.get_all_games().await {
-        Some(games) => Ok(serde_json::to_string(&games).unwrap()),
-        None => Err(Status::ServiceUnavailable),
+        Ok(games) => Ok(serde_json::to_string(&games).unwrap()),
+        Err(_) => Err(Status::ServiceUnavailable),
     }
 }
 
@@ -67,9 +67,14 @@ pub async fn create_game(
         status: "not_started".to_string(),
     };
     let _ = main_state.db.create_game(new_game).await;
-    let games = main_state.db.get_all_games().await;
-    let _res = main_state.lobby_channel.send(games.unwrap());
-    Ok(serde_json::to_string(&GameId { game_id: id }).unwrap())
+
+    match main_state.db.get_all_games().await {
+        Ok(games) => {
+            let _res = main_state.lobby_channel.send(games);
+            Ok(serde_json::to_string(&GameId { game_id: id }).unwrap())
+        }
+        Err(_) => Err(Status::ServiceUnavailable),
+    }
 }
 
 #[put("/games", data = "<data>")]

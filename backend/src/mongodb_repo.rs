@@ -140,24 +140,16 @@ impl MongoRepo {
 
 // games
 impl MongoRepo {
-    pub async fn create_game(&self, new_game: Game) -> InsertOneResult {
-        self.game_col
-            .insert_one(new_game, None)
-            .await
-            .expect("Error creating user")
+    pub async fn create_game(&self, new_game: Game) -> Result<InsertOneResult, Error> {
+        self.game_col.insert_one(new_game, None).await
     }
 
     pub async fn get_one_game(&self, id: String) -> Result<Option<Game>, Error> {
         let filter = doc! {"id": id};
-        let result = self.game_col.find_one(filter, None).await;
-
-        match result {
-            Ok(game) => Ok(game),
-            Err(err) => Err(err),
-        }
+        self.game_col.find_one(filter, None).await
     }
 
-    pub async fn get_all_games(&self) -> Option<Vec<Game>> {
+    pub async fn get_all_games(&self) -> Result<Vec<Game>, Error> {
         let games = self.game_col.find(None, None).await;
 
         match games {
@@ -166,9 +158,9 @@ impl MongoRepo {
                 while let Some(doc) = cursor.next().await {
                     result.push(doc.unwrap());
                 }
-                Some(result)
+                Ok(result)
             }
-            Err(_) => None,
+            Err(e) => Err(e),
         }
     }
 
