@@ -1,0 +1,7 @@
+body {
+  height: 100vh;
+  margin: 0;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-image: url("images/trees.jpg");
+}

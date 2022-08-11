@@ -24,12 +24,13 @@ pub fn board(props: &BoardProps) -> Html {
     let items = (0..=first_row).collect::<Vec<_>>();
     let player_id = props.player_id.clone();
     let game_id = props.game.id.clone();
+    let disabled = props.game.status != "active" || props.game.turn != player_id;
     html! {
     <div class={style_sheet} >
         <div class="drop-row">
-        {for items.iter().enumerate().map(move |(i,_)|{
-            html!{<DropToken column={i} player_id={props.player_id.clone()} game_id={game_id.clone()}/>}
-        })}
+            {for items.iter().enumerate().map(move |(i,_)|{
+                html!{<DropToken column={i} player_id={props.player_id.clone()} game_id={game_id.clone()} {disabled}/>}
+            })}
         </div>
         <div class="board">
             {for props.game.grid.iter().map(move |row|{
@@ -51,6 +52,7 @@ struct DropTokenProps {
     column: usize,
     player_id: String,
     game_id: String,
+    disabled: bool,
 }
 
 #[function_component(DropToken)]
@@ -73,5 +75,8 @@ fn dropToken(props: &DropTokenProps) -> Html {
             Err(_) => (),
         }
     });
-    html! {<div class="drop" onclick={drop_token.clone()}>{props.column}</div>}
+
+    html! {<button class="drop" disabled={props.disabled} onclick={drop_token.clone()}>
+
+    </button>}
 }

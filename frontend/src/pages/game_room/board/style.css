@@ -1,13 +1,25 @@
 .drop-row {
-  display: flex;
+  display: grid;
   width: 18em;
+  grid-template-columns: repeat(7, 1fr);
   justify-content: space-evenly;
 }
 
 .drop {
   width: 2em;
+  height: 2em;
   margin: 0.5em;
   text-align: center;
+  background-position: center;
+  background-size: cover;
+  background-image: url("/images/arrow-down.png");
+}
+
+.drop button[disabled="disabled"],
+button:disabled {
+  cursor: not-allowed;
+  background-color: rgba(229, 229, 229, 0.5) !important;
+  background-image: url("/images/hourglass.jpg");
 }
 
 .board {

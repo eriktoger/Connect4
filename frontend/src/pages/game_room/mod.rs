@@ -2,6 +2,7 @@ mod board;
 use crate::{api_handler::ApiHandler, hooks::use_api_handler};
 use board::Board;
 use common::Game;
+use stylist::Style;
 use yew::{function_component, html, use_effect_with_deps, use_state, Properties};
 
 #[derive(Properties, PartialEq)]
@@ -11,6 +12,7 @@ pub struct GameRoomProps {
 
 #[function_component(GameRoom)]
 pub fn game_room(props: &GameRoomProps) -> Html {
+    let style_sheet = Style::new(include_str!("style.css")).expect("Css failed to load");
     let api_handler = use_api_handler();
 
     let game = use_state(|| Game {
@@ -58,10 +60,19 @@ pub fn game_room(props: &GameRoomProps) -> Html {
         (),
     );
     html! {
-       <div>
-        <span>{"this is a game room nr: "}{props.game_id.clone()}</span>
-        <Board game={(*game).clone()} player_id={username} />
-        <h2>{"Game Status:"} {(*game).status.clone()}</h2>
-       </div>
+        <main class={style_sheet}>
+            <div class="container">
+                <div>
+
+                    {if game.turn == username && game.status == "active" {
+                        html!{<h3>{"It's your turn"}</h3>}
+                    }else{
+                        html!{<h3>{"Waiting..."}</h3>}
+                    }}
+                    <Board game={(*game).clone()} player_id={username} />
+                    <h2>{"Game Status:"} {(*game).status.clone()}</h2>
+                </div>
+            </div>
+        </main>
     }
 }
