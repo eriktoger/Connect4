@@ -1,6 +1,6 @@
 use std::env;
 extern crate dotenv;
-use common::{Game, UserInfo};
+use common::{Game, UserInfo, MAX_NUMBER_OF_GAMES};
 use dotenv::dotenv;
 use mongodb::bson::oid::ObjectId;
 use mongodb::error::Error;
@@ -70,7 +70,7 @@ impl MongoRepo {
     }
     async fn add_channels(&self) {
         let mut docs = vec![];
-        for _ in 0..3 {
+        for _ in 0..MAX_NUMBER_OF_GAMES {
             docs.push(Channel {
                 _id: None,
                 id: Uuid::new_v4().to_string(),
@@ -150,14 +150,22 @@ impl MongoRepo {
         self.game_col.find_one(filter, None).await
     }
 
-    pub async fn get_all_games(&self) -> Result<Vec<Game>, Error> {
+    pub async fn get_active_games(&self) -> Result<Vec<Game>, Error> {
         let games = self.game_col.find(None, None).await;
 
         match games {
             Ok(mut cursor) => {
                 let mut result: Vec<Game> = Vec::new();
                 while let Some(doc) = cursor.next().await {
-                    result.push(doc.unwrap());
+                    match doc {
+                        Ok(game) => {
+                            if game.status == "active" || game.status == "not_started" {
+                                result.push(game);
+                            }
+                        }
+
+                        Err(_) => (),
+                    }
                 }
                 Ok(result)
             }

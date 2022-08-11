@@ -24,16 +24,27 @@ pub fn game_room(props: &GameRoomProps) -> Html {
     });
 
     let game_clone = game.clone();
-    use_state(|| {
+    let game_events = use_state(|| {
         let route = format!("{}{}", "/game-events/", props.game_id);
-        ApiHandler::get_event_listener(route, move |new_game: Game| {
-            game_clone.set(new_game);
-        })
+        Some(ApiHandler::get_event_listener(
+            route,
+            move |new_game: Game| {
+                game_clone.set(new_game);
+            },
+        ))
     });
 
     let game_clone = game.clone();
     let game_id = props.game_id.clone();
     let username = api_handler.user_info.username.clone();
+
+    // stop listening to game
+    if game.status.starts_with("player_") {
+        if (*game_events).is_some() {
+            game_events.set(None);
+        }
+    }
+
     use_effect_with_deps(
         move |_| {
             let game_clone = game_clone.clone();

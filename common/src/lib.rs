@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+pub const MAX_NUMBER_OF_GAMES: usize = 10;
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct NewPlayer {
     pub game: String,

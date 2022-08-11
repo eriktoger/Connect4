@@ -13,7 +13,7 @@ use uuid::Uuid;
 
 #[get("/games")]
 pub async fn get_games(main_state: &State<MainState>) -> Result<String, Status> {
-    match main_state.db.get_all_games().await {
+    match main_state.db.get_active_games().await {
         Ok(games) => Ok(serde_json::to_string(&games).unwrap()),
         Err(_) => Err(Status::ServiceUnavailable),
     }
@@ -68,7 +68,7 @@ pub async fn create_game(
     };
     let _ = main_state.db.create_game(new_game).await;
 
-    match main_state.db.get_all_games().await {
+    match main_state.db.get_active_games().await {
         Ok(games) => {
             let _res = main_state.lobby_channel.send(games);
             Ok(serde_json::to_string(&GameId { game_id: id }).unwrap())
@@ -199,10 +199,22 @@ pub async fn play_move(main_state: &State<MainState>, data: &str) -> Result<Stri
     let sender = main_state.game_channels.get(&game.channel);
     match sender {
         Some(sender) => {
-            let _ = sender.send(game);
+            let _ = sender.send(game.clone());
         }
         None => (),
     };
+
+    if game.status == "player_1_won" || game.status == "player_2_won" {
+        let channel = game.channel.clone();
+        game.channel = "".to_string();
+        main_state.db.update_one_channel(channel, false).await;
+        match main_state.db.get_active_games().await {
+            Ok(games) => {
+                let _res = main_state.lobby_channel.send(games);
+            }
+            Err(_) => (),
+        }
+    }
 
     Ok(empty_return)
 }

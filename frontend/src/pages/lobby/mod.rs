@@ -1,8 +1,8 @@
 use crate::{api_handler::ApiHandler, hooks::use_api_handler, routes::Route};
-use common::{Empty, Game, GameId, NewPlayer};
+use common::{Empty, Game, GameId, NewPlayer, MAX_NUMBER_OF_GAMES};
 use stylist::Style;
 use web_sys::MouseEvent;
-use yew::{function_component, html, use_effect_with_deps, use_state, Callback};
+use yew::{function_component, html, use_effect_with_deps, use_state, Callback, Properties};
 use yew_router::{history::AnyHistory, history::History, hooks::use_history};
 
 #[function_component(Lobby)]
@@ -36,25 +36,51 @@ pub fn lobby() -> Html {
 
     let history = use_history().unwrap();
     let history_clone = history.clone();
-    let api_handler_clone = api_handler.clone();
+
+    let disable_create_game = MAX_NUMBER_OF_GAMES <= (*games).len();
+
     html! {
         <main class={style_sheet}>
-            <div>{"Welcome to the lobby!"}</div>
-            <div class="card-container">
-                {for (*games).iter().map(move |game|{
-                    let create_game = get_join_game(game.clone(),history.clone(),api_handler_clone.clone());
-                    html!{
-                        <div class="game-card" onclick={create_game}>
-                            <h1>{"id:"}{&game.id}</h1>
-                            <p>{"Player 1:"}{&game.player_1}</p>
-                            <p>{"Player 2:"}{&game.player_2}</p>
-                        </div>
+            <div class="container">
+                <div>
+                    <h1>{"Game Lobby"}</h1>
+
+                    { if disable_create_game { html! {<h3>{"Maximum number of games reached"}</h3>}}else{
+                        html!{<button disabled={disable_create_game} class="create-game" onclick={get_create_game( history_clone,api_handler.clone())}>{"Create new game"}</button>}
                     }}
-                )}
-             </div>
-             <button onclick={get_create_game( history_clone,api_handler.clone())}>{"Create new game"}</button>
-       </main>
+                    <h2>{"Ongoing Games"}</h2>
+                    <div class="game-container">
+                        {if (*games).len() == 0{
+                            html!{<p>{"No games available"}</p>}
+                        } else {
+                            html!{<GameList games={(*games).clone()}/>}
+                        }}
+                    </div>
+                </div>
+            </div>
+        </main>
     }
+}
+
+#[derive(Properties, PartialEq)]
+pub struct GameListProps {
+    pub games: Vec<Game>,
+}
+
+#[function_component(GameList)]
+pub fn game_list(props: &GameListProps) -> Html {
+    let history = use_history().unwrap();
+    let api_handler = use_api_handler();
+    html! { for (props.games).iter().enumerate().map(move |(i,game)|{
+         let create_game = get_join_game(game.clone(),history.clone(),api_handler.clone());
+        html!{
+            <div class="game-card" onclick={create_game}>
+                <h3>{"Game: "}{i+1}</h3>
+                <p>{"Player 1:"}{&game.player_1}</p>
+                <p>{"Player 2:"}{&game.player_2}</p>
+            </div>
+        }}
+    )}
 }
 
 fn get_join_game(
