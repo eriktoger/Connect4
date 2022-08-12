@@ -1,4 +1,5 @@
 mod api_handler;
+mod components;
 mod constants;
 mod hooks;
 mod pages;

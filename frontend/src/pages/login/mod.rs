@@ -1,30 +1,29 @@
 use crate::api_handler::ApiHandler;
+use crate::components::Container;
 use common::UserInfo;
 use std::{
     cell::RefCell,
     rc::{self, Rc},
 };
-use stylist::Style;
 use wasm_bindgen::JsCast;
 use web_sys::{Event, HtmlInputElement, MouseEvent};
 use yew::{function_component, html, use_mut_ref, Callback, Properties, UseStateHandle};
 
+const STYLE_PATH: &str = include_str!("style.css");
 #[derive(Properties, PartialEq)]
-pub struct HomeProps {
+pub struct LoginProps {
     pub api_handler: UseStateHandle<ApiHandler>,
 }
 
 #[function_component(Login)]
-pub fn login(props: &HomeProps) -> Html {
-    let style_sheet = Style::new(include_str!("style.css")).expect("Css failed to load!");
+pub fn login(props: &LoginProps) -> Html {
     let login_username = use_mut_ref(|| "".to_string());
     let login_password = use_mut_ref(|| "".to_string());
     let signup_username = use_mut_ref(|| "".to_string());
     let signup_password = use_mut_ref(|| "".to_string());
 
     html! {
-    <div class={{style_sheet}}>
-        <div class="container">
+    <Container path={STYLE_PATH}>
             <div class="login">
                 <h1>{"Log in"}</h1>
                 <Form
@@ -37,7 +36,6 @@ pub fn login(props: &HomeProps) -> Html {
                     }
                     button_text={"Log in"}
                     />
-
             </div>
             <div class="signup">
                 <h2> {"Sign up"}</h2>
@@ -51,10 +49,8 @@ pub fn login(props: &HomeProps) -> Html {
                     }
                     button_text={"Sign up"}
                     />
-
             </div>
-        </div>
-    </div>
+    </Container>
         }
 }
 

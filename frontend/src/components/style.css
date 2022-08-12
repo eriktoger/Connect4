@@ -1,0 +1,19 @@
+.outer-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.inner-container {
+  width: 400px;
+  max-height: 80vh;
+  background-color: #ffffff70;
+  padding: 10px;
+  border-radius: 15px;
+  overflow-y: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

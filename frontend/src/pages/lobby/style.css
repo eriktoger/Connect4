@@ -1,20 +1,3 @@
-.container {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.container > div {
-  width: 400px;
-  max-height: 80vh;
-  background-color: #ffffff70;
-  padding: 10px;
-  border-radius: 15px;
-  overflow-y: auto;
-}
-
 .create-game {
   padding: 5px;
   font-size: 14px;

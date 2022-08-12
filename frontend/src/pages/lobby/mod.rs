@@ -1,13 +1,14 @@
+use crate::components::Container;
 use crate::{api_handler::ApiHandler, hooks::use_api_handler, routes::Route};
 use common::{Empty, Game, GameId, NewPlayer, MAX_NUMBER_OF_GAMES};
-use stylist::Style;
 use web_sys::MouseEvent;
 use yew::{function_component, html, use_effect_with_deps, use_state, Callback, Properties};
 use yew_router::{history::AnyHistory, history::History, hooks::use_history};
 
+const STYLE_PATH: &str = include_str!("style.css");
+
 #[function_component(Lobby)]
 pub fn lobby() -> Html {
-    let style_sheet = Style::new(include_str!("style.css")).expect("Css failed to load");
     let games = use_state(|| vec![]);
     let api_handler = use_api_handler();
     let games_clone = games.clone();
@@ -40,8 +41,7 @@ pub fn lobby() -> Html {
     let disable_create_game = MAX_NUMBER_OF_GAMES <= (*games).len();
 
     html! {
-        <main class={style_sheet}>
-            <div class="container">
+        <Container path={STYLE_PATH}>
                 <div>
                     <h1>{"Game Lobby"}</h1>
 
@@ -57,8 +57,7 @@ pub fn lobby() -> Html {
                         }}
                     </div>
                 </div>
-            </div>
-        </main>
+       </Container>
     }
 }
 
