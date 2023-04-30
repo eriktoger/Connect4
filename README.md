@@ -3,17 +3,15 @@
 ## Start locally
 
 - Install rust
-- add env for backend:
-
-  - C4_API_ROUTE=http://localhost:8000.
-  - I added it to .bashrc : export C4_API_ROUTE=http://localhost:8000
-
-- cd frontend && trunk serve
+- add .env in backend folder:
+  - MONGO_URI with your mongoDB connection string
+- add export C4_API_ROUTE=http://localhost:8000 to .bashrc
+- cd frontend && trunk serve # install trunk with $cargo install --locked trunk
 - cd backend && cargo run
 
 ## Deployed at
 
-https://connect4rust.netlify.app
+https://connect4rust.netlify.app/
 
 ## How to deploy Frontend:
 
@@ -21,8 +19,8 @@ https://connect4rust.netlify.app
 
 ## How to deployt Backend:
 
-- Run deploy_backend.sh
-- Restart backend: heroku ps:restart web -a connect4rust
+- Log in to your render account and click deploy
+- Auto deploy can be enable.
 
 ## About Frontend
 

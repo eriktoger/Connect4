@@ -7,3 +7,4 @@ backend/.env
 
 # Local Netlify folder
 .netlify
+.env
