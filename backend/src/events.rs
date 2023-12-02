@@ -9,9 +9,14 @@ use rocket::{Shutdown, State};
 pub async fn game_events(
     mut end: Shutdown,
     main_state: &State<MainState>,
-    game_id: String,
+    game_id: &str,
 ) -> EventStream![] {
-    let game = main_state.db.get_one_game(game_id).await.unwrap().unwrap();
+    let game = main_state
+        .db
+        .get_one_game(game_id.to_string())
+        .await
+        .unwrap()
+        .unwrap();
     let current_room = main_state.game_channels.get(&game.channel).unwrap();
     let mut rx = current_room.subscribe();
     EventStream! {

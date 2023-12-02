@@ -34,7 +34,7 @@ impl<'r> FromRequest<'r> for UserAuth {
         let main_state: &MainState = req.rocket().state().unwrap();
 
         match req.headers().get_one("x-api-key") {
-            None => Outcome::Failure((Status::BadRequest, UserAuthError::Missing)),
+            None => Outcome::Error((Status::BadRequest, UserAuthError::Missing)),
             Some(key) => {
                 let deserialized: UserAuth = serde_json::from_str(&key).unwrap();
                 let result = main_state
@@ -45,10 +45,10 @@ impl<'r> FromRequest<'r> for UserAuth {
                 match result {
                     Ok(is_auth) => match is_auth {
                         true => Outcome::Success(deserialized),
-                        false => Outcome::Failure((Status::Unauthorized, UserAuthError::Invalid)),
+                        false => Outcome::Error((Status::Unauthorized, UserAuthError::Invalid)),
                     },
                     Err(_) => {
-                        Outcome::Failure((Status::ServiceUnavailable, UserAuthError::InternalError))
+                        Outcome::Error((Status::ServiceUnavailable, UserAuthError::InternalError))
                     }
                 }
             }

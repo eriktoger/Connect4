@@ -20,11 +20,8 @@ pub async fn get_games(main_state: &State<MainState>) -> Result<String, Status> 
 }
 
 #[get("/games/<game_id>")]
-pub async fn get_one_game(
-    main_state: &State<MainState>,
-    game_id: String,
-) -> Result<String, Status> {
-    let game_result = main_state.db.get_one_game(game_id).await;
+pub async fn get_one_game(main_state: &State<MainState>, game_id: &str) -> Result<String, Status> {
+    let game_result = main_state.db.get_one_game(game_id.to_string()).await;
     match game_result {
         Ok(game_option) => match game_option {
             Some(game) => Ok(serde_json::to_string(&game).unwrap()),
