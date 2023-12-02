@@ -8,6 +8,7 @@ mod routes;
 use crate::pages::login::Login;
 use api_handler::ApiHandler;
 use common::UserInfo;
+use components::Loading;
 use routes::{switch, Route};
 use yew::{function_component, html, use_effect_with_deps, use_state, ContextProvider};
 use yew_router::{BrowserRouter, Switch};
@@ -55,7 +56,7 @@ fn app() -> Html {
     );
 
     if *is_loading == true {
-        return html! {<div>{"Loading"}</div>};
+        return html! {<Loading/>};
     }
 
     html! {

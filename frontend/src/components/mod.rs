@@ -24,3 +24,19 @@ pub fn container(props: &GameRoomProps) -> Html {
             </main>
     }
 }
+
+#[function_component(Loading)]
+pub fn loading() -> Html {
+    let common_style_sheet = Style::new(include_str!("style.css")).expect("Css failed to load");
+
+    html! {
+    <main class={common_style_sheet}>
+        <div class="outer-container">
+            <div class="inner-container loading-container" >
+                <span> {"Loading..."}</span>
+                <span> {"Please be patient."} </span>
+                <span> {"The backend is hosted on a free tier."} </span>
+            </div>
+        </div>
+    </main>}
+}
